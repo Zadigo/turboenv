@@ -1,6 +1,7 @@
 import pathlib
 import base64
 from src.turboenv.main import TurboEnv, _load_file
+import os
 
 
 def test_load_file():
@@ -37,8 +38,8 @@ class TestTurboEnv:
     def test_bool_valid(self):
         instance = TurboEnv()
         instance.load_envs('.env')
-        assert instance.bool("BOOL_ENV") is True
-        assert instance.bool("BOOL_ENV_2") is True
+        assert instance.boolean("BOOL_ENV") is True
+        assert instance.boolean("BOOL_ENV_2") is True
 
     def test_str(self):
         instance = TurboEnv()
@@ -91,7 +92,7 @@ class TestExceptions:
         instance = TurboEnv()
         instance.load_envs('.env')
         try:
-            instance.bool("AGE")
+            instance.boolean("AGE")
         except ValueError as e:
             assert str(e) == "Value for AGE is not a valid boolean: 30"
 
@@ -116,6 +117,13 @@ class TestExceptions:
         instance = TurboEnv()
         instance.load_envs('.env')
         try:
-            instance.bool("AGE")
+            instance.boolean("AGE")
         except ValueError as e:
             assert str(e) == "Value for AGE is not a valid boolean: 30"
+
+
+def test_loaded_in_system_variables():
+    instance = TurboEnv()
+    instance.load_envs('.env')
+
+    assert os.getenv("BOOL_ENV") == "True"

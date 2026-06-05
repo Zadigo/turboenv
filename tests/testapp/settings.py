@@ -1,5 +1,6 @@
 from pathlib import Path
 from src.turboenv.main import TurboEnv
+import os
 
 env = TurboEnv()
 
@@ -18,7 +19,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = env.secret('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.bool('DEBUG', default=False)
+DEBUG = env.boolean('DEBUG', default=False)
 
 ALLOWED_HOSTS = env.domain_list('ALLOWED_HOSTS', default=[])
 
@@ -101,9 +102,9 @@ LANGUAGE_CODE = env.str_list('LANGUAGE_CODE', default='en-us')
 
 TIME_ZONE = env.string('TIME_ZONE', default='UTC')
 
-USE_I18N = env.bool('USE_I18N', default=True)
+USE_I18N = env.boolean('USE_I18N', default=True)
 
-USE_TZ = env.bool('USE_TZ', default=True)
+USE_TZ = env.boolean('USE_TZ', default=True)
 
 
 # Static files (CSS, JavaScript, Images)

@@ -146,8 +146,8 @@ class TurboEnv:
         env = TurboEnv()
         env.load_envs('.env')
 
-        debug_mode = env.bool('DEBUG_MODE', default=False)
-        database_url = env.str('DATABASE_URL')
+        debug_mode = env.boolean('DEBUG_MODE', default=False)
+        database_url = env.string('DATABASE_URL')
         allowed_hosts = env.str_list('ALLOWED_HOSTS', default=[])
 
     Variables can separated by namespaces using the `namespace` method. Variables that do not specify a namespace 
@@ -239,17 +239,25 @@ class TurboEnv:
             # Once the files are loaded, check the system environment
             # variables. They will override the values from the files
             # if they exists in the system environment.
+            # for key, value in self._cache.items():
+            #     if key in system_environ:
+            #         self._cache[key] = system_environ[key]
+
             system_environ = os.environ
+            skip_keys = list(system_environ.keys())
+            # Set the environment variables from the cache into the system environment
+            # This is necessary for the environment variables to be accessible from
+            # the system environment,
             for key, value in self._cache.items():
-                if key in system_environ:
-                    self._cache[key] = system_environ[key]
+                if key in skip_keys:
+                    continue
+                os.environ.setdefault(key, value)
 
             # In the specific case of Docker environments for example,
-            # since .env files are not used, we can load all the environment variables
+            # since .env files are not used, load all the environment variables
             # from the system environment if no files were specified and no files were loaded.
-            if not self.has_files and not args:
-                for key, value in system_environ.items():
-                    self._cache[key] = value
+            for key, value in system_environ.items():
+                self._cache[key] = value
 
     def get(self, name: str) -> TypeAny:
         """A strict version of the `get` method that raises a KeyError 
@@ -259,7 +267,7 @@ class TurboEnv:
         except KeyError as e:
             raise exceptions.MissingEnvVariableError(name) from e
 
-    def bool(self, name: str, default: bool = None) -> bool:
+    def boolean(self, name: str, default: bool = None) -> bool:
         booleans = ['true', '1', 'yes', 'on', 'false', '0', 'no', 'off']
 
         value = self._cache.get(name, None)
@@ -412,13 +420,18 @@ class TurboEnv:
         if name in self._cache:
             return self._cache[name]
 
-        random_value = ''.join(random.choices(
-            string.ascii_letters + string.digits, k=32))
+        random_value = ''.join(
+            random.choices(
+                string.ascii_letters + string.digits,
+                k=32
+            )
+        )
         if is_secret:
             random_value = base64.b64encode(
                 random_value.encode('utf-8')).decode('utf-8')
 
         self._cache[name] = random_value
+        os.environ.setdefault(name.upper(), random_value)
         return random_value
 
     # def namespace(self, name: str) -> "TurboEnv":

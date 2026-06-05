@@ -4,10 +4,31 @@ version = "0.1.0"
 description = "TurboEnv is a Python library that provides a simple and efficient way to manage environment variables in your applications. It allows you to easily load environment variables from .env files, access them in your code, and handle different environments (development, testing, production) with ease."
 readme = "README.md"
 requires-python = ">=3.14"
+authors = [
+  {name = "John Pendenque", email = "pendenquejohn@gmail.com"},
+]
+maintainers = [
+  {name = "John Pendenque", email = "pendenquejohn@gmail.com"}
+]
+classifiers = [
+  "Development Status :: 1 - Planning",
+  "Operating System :: POSIX",
+  "Operating System :: Unix",
+  "Operating System :: Microsoft :: Windows",
+  "Intended Audience :: Developers",
+  "Topic :: Internet",
+  "Topic :: Internet :: WWW/HTTP",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.14",
+  "Natural Language :: English",
+  "Operating System :: Microsoft :: Windows :: Windows 11",
+  "Operating System :: MacOS"
+]
 dependencies = []
 
 [dependency-groups]
 dev = [
+    "autopep8>=2.3.2",
     "coverage>=7.14.1",
     "django>=6.0.6",
     "dotenv>=0.9.9",
@@ -26,3 +47,26 @@ dev = [
 
 [tool.pytest.ini_options]
 # addopts = "--cov=turboenv --cov-report html"
+
+[project.urls]
+Homepage = "https://github.com/Zadigo/turboenv"
+Documentation = "https://github.com/Zadigo/turboenv/wiki"
+Repository = "https://github.com/Zadigo/turboenv.git"
+Changelog = "https://github.com/Zadigo/turboenv/blob/main/CHANGELOG.md"
+
+[tool.pyright]
+typeCheckingMode = "off"
+reportMissingImports = true
+reportUntypedBaseClass = true
+
+# [tool.pytest_env]
+# env_files = [".env", ".env.test"]
+
+[tool.setuptools]
+packages = ["turboenv"]
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true
