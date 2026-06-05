@@ -9,3 +9,12 @@ class MissingEnvVariableError(TurboEnvError):
         self.values = ', '.join(values)
         message = self.message.format(values=self.values)
         super().__init__(message)
+
+
+class ConditionalError(TurboEnvError):
+    message = "A conditional check failed: {details}"
+
+    def __init__(self, value: str, expected: str, condition: str):
+        self.details = f"Expected {value} to {condition} {expected}"
+        message = self.message.format(details=self.details)
+        super().__init__(message)

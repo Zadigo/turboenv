@@ -4,7 +4,7 @@ from collections import OrderedDict
 import pathlib
 from contextlib import contextmanager
 from urllib.parse import urlparse
-from src.turboenv.exceptions import MissingEnvVariableError
+from src.turboenv import exceptions
 import logging
 import os
 import string
@@ -52,10 +52,10 @@ class Conditionals[T = TypeAny]:
         Raises:
             ExceptionGroup: If any of the specified environment variables do not exist, an ExceptionGroup is raised containing all the MissingEnvVariableError instances for the missing variables.
         """
-        errors: list[MissingEnvVariableError] = []
+        errors: list[exceptions.MissingEnvVariableError] = []
         for name in values:
             if not self.instance._exists(name):
-                errors.append(MissingEnvVariableError(name))
+                errors.append(exceptions.MissingEnvVariableError(name))
 
         if errors:
             raise ExceptionGroup("Missing environment variables", errors)
@@ -63,25 +63,38 @@ class Conditionals[T = TypeAny]:
         return self
 
     def to_be(self, expected: T) -> 'Conditionals[T]':
-        self._value == expected
+        if self._value != expected:
+            raise exceptions.ConditionalError(self._value, expected, "to be")
         return self
 
     def not_to_be(self, expected: T) -> 'Conditionals[T]':
-        self._value != expected
+        result = self._value != expected
+        if not result:
+            raise exceptions.ConditionalError(
+                self._value, expected, "not to be")
         return self
 
     def to_exist(self) -> 'Conditionals[T]':
-        self._value is not None
+        value = self.instance._cache.get(self._value, None)
+        if value is None:
+            raise exceptions.ConditionalError(self._value, None, "exist")
         return self
 
     def to_not_be_empty(self) -> 'Conditionals[T]':
-        self._value is not None and self._value != ""
+        value = self.instance._cache.get(self._value, None)
+        if value is None or value == "":
+            raise exceptions.ConditionalError(
+                self._value, None, "not be empty")
         return self
 
-    def to_contain(self, value: T) -> 'Conditionals[T]':
+    def to_contain(self, expected: T) -> 'Conditionals[T]':
         if not isinstance(self._value, (list, str)):
             raise TypeError(
                 "Value must be a list or a string to use to_contain")
+
+        value = self.instance._cache.get(self._value, '')
+        if expected not in value:
+            raise exceptions.ConditionalError(value, expected, "contain")
         return self
 
     def path_to_exist(self) -> 'Conditionals[T]':
@@ -89,9 +102,15 @@ class Conditionals[T = TypeAny]:
             raise TypeError(
                 "Value must be a string or a pathlib.Path to use path_to_exist")
 
-        path = pathlib.Path(self._value)
+        value = self.instance._cache.get(self._value, None)
+        if value is None:
+            raise exceptions.ConditionalError(
+                self._value, None, "exist as a path")
+
+        path = pathlib.Path(value)
         if not path.exists():
-            raise FileNotFoundError(f"Path {self._value} does not exist")
+            raise FileNotFoundError(
+                f"Path from env variable {self._value} does not exist")
         return self
 
 
