@@ -63,7 +63,7 @@ reportUntypedBaseClass = true
 # env_files = [".env", ".env.test"]
 
 [tool.setuptools]
-packages = ["turboenv"]
+# packages = [""]
 
 [[tool.uv.index]]
 name = "testpypi"

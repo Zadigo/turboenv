@@ -414,7 +414,16 @@ class TurboEnv:
             return decoded_value
 
     def random_value(self, name: str, is_secret: bool = False) -> str:
-        """Create an environment variable with a random value."""
+        """Create an environment variable with a random value.
+
+        Example usage::
+
+            from turboenv import TurboEnv
+
+            env = TurboEnv()
+            random_api_key = env.random_value('API_KEY', is_secret=True)
+            # random_api_key will be a random string that is base64-encoded, e.g. "c29tZS1yYW5kb20tc3RyaW5n"
+        """
         # To avoid regenerating the random value every time,
         # we can check if the value already exists in the cache
         if name in self._cache:
@@ -439,6 +448,9 @@ class TurboEnv:
 
     def conditional(self, name: str):
         """
+        Returns a Conditionals instance for the specified environment variable name, 
+        allowing you to apply conditional logic on the value of the environment variable.
+
         Args:
             name (str): The name of the environment variable to apply the conditional logic on.
         """

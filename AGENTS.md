@@ -15,7 +15,7 @@ TurboEnv is a Python package designed to facilitate the manipulation of environm
 
 ## Build
 
-* Build the package: `uv build`
+* Build the package: `uv build --no-sources`
 * Check the version of the package with: `uv version`
 
 # Code style guidelines
@@ -27,5 +27,3 @@ TurboEnv is a Python package designed to facilitate the manipulation of environm
 * Run the tests: `pytest`
 
 # Security considerations
-
-* 
