@@ -1,7 +1,7 @@
 [project]
 name = "turboenv"
 version = "0.1.0"
-description = "Add your description here"
+description = "TurboEnv is a Python library that provides a simple and efficient way to manage environment variables in your applications. It allows you to easily load environment variables from .env files, access them in your code, and handle different environments (development, testing, production) with ease."
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = []

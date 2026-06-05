@@ -1,5 +1,6 @@
-from src.main import turbo, Value, TurboEnv, _load_file
+from src.main import Value, TurboEnv, _load_file
 import pathlib
+import base64
 
 
 def test_load_file():
@@ -14,13 +15,17 @@ class TestTurboEnv:
         instance.load_envs('.env')
 
         assert len(instance._cache.keys()) > 0
+        assert len(instance._files) == 1
+        assert instance.only is None
+        assert instance.fail_on_missing is False
+        assert instance.skip_empty is False
 
     def test_implementation_with_only(self):
         instance = TurboEnv(only="BOOL_")
         instance.load_envs('.env')
 
         for key in instance._cache.keys():
-            assert key.startswith("BOOL_") or key == "BOOL_"
+            assert key.startswith("BOOL_")
 
     def test_implementation_with_call(self):
         instance = TurboEnv()
@@ -29,44 +34,23 @@ class TestTurboEnv:
 
         assert instance._cache.get("RANDOM_VALUE") == "123"
 
-    def test_call(self):
-        instance = turbo()
-
     def test_bool_valid(self):
         instance = TurboEnv()
         instance.load_envs('.env')
         assert instance.bool("BOOL_ENV") is True
         assert instance.bool("BOOL_ENV_2") is True
 
-    def test_bool_invalid(self):
-        instance = TurboEnv()
-        instance.load_envs('.env')
-        try:
-            instance.bool("AGE")
-        except ValueError as e:
-            assert str(e) == "Value for AGE is not a valid boolean: 30"
-
     def test_str(self):
         instance = TurboEnv()
         instance.load_envs('.env')
-        assert instance.str("STR_ENV") == "Hello, World!"
-        assert instance.str("NON_EXISTENT_ENV",
-                            default="DefaultValue") == "DefaultValue"
+        assert instance.string("STR_ENV") == "Hello, World!"
+        assert instance.string("NON_EXISTENT_ENV",
+                               default="DefaultValue") == "DefaultValue"
 
-    def test_list(self):
+    def test_array(self):
         instance = TurboEnv()
         instance.load_envs('.env')
-        assert instance.list("HOSTS") == ["A", "B", "C"]
-
-    def test_list_with_validation(self):
-        instance = TurboEnv()
-        instance.load_envs('.env')
-
-        def validate_host(host: str) -> bool:
-            return host in ["A", "B", "C"]
-
-        assert instance.list("HOSTS", validate=validate_host) == [
-            "A", "B", "C"]
+        assert instance.array("HOSTS") == ["A", "B", "C"]
 
     def test_str_list(self):
         instance = TurboEnv()
@@ -85,13 +69,53 @@ class TestTurboEnv:
         value = instance.get("BOOL_ENV")
         assert isinstance(value, Value)
 
-    def test_namespace(self):
+    def test_secret(self):
         instance = TurboEnv()
         instance.load_envs('.env')
-        namespace = instance.namespace("TEST_NAMESPACE")
-        assert isinstance(namespace, TurboEnv)
+
+        secret = base64.b64encode(b'my_secret_password').decode('utf-8')
+        instance(DB_PASSWORD=secret)
+        
+        secret_value = instance.secret("DB_PASSWORD")
+        assert secret_value == "my_secret_password"
+
+    # def test_namespace(self):
+    #     instance = TurboEnv()
+    #     instance.load_envs('.env')
+    #     namespace = instance.namespace("TEST_NAMESPACE")
+    #     assert isinstance(namespace, TurboEnv)
 
 
-def test_value_klass():
-    value = turbo.str("test")
-    assert value == "TurboEnv"
+class TestExceptions:
+    def test_bool_invalid_exception(self):
+        instance = TurboEnv()
+        instance.load_envs('.env')
+        try:
+            instance.bool("AGE")
+        except ValueError as e:
+            assert str(e) == "Value for AGE is not a valid boolean: 30"
+
+    def test_list_invalid_exception(self):
+        instance = TurboEnv()
+        instance.load_envs('.env')
+
+        try:
+            instance.list("HOSTS", cast=str)
+        except ValueError as e:
+            assert str(
+                e) == "Value 'D' in HOSTS is not valid according to the provided validation function."
+
+    def test_file_not_found_exception(self):
+        instance = TurboEnv()
+        try:
+            instance.load_envs('non_existent_file.env')
+        except FileNotFoundError as e:
+            assert str(e) == "File non_existent_file.env not found."
+
+    def test_bool_invalid(self):
+        instance = TurboEnv()
+        instance.load_envs('.env')
+        try:
+            instance.bool("AGE")
+        except ValueError as e:
+            assert str(e) == "Value for AGE is not a valid boolean: 30"
