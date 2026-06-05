@@ -5,7 +5,6 @@ import pathlib
 from contextlib import contextmanager
 from urllib.parse import urlparse
 from src.turboenv import exceptions
-import logging
 import os
 import string
 import random
