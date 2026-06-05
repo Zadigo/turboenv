@@ -9,6 +9,11 @@ import os
 import string
 import random
 import base64
+import json as json_module
+import logging
+import re
+
+logger = logging.getLogger(__name__)
 
 
 @contextmanager
@@ -169,6 +174,7 @@ class TurboEnv:
     _cache: OrderedDict[str, TypeAny] = OrderedDict()
 
     def __init__(self, fail_on_missing: bool = False, only: str = None, skip_empty: bool = False):
+        print('called __init__')       
         self.only = only
         self.fail_on_missing = fail_on_missing
         self.skip_empty = skip_empty
@@ -210,6 +216,21 @@ class TurboEnv:
         if not args:
             args = ('.env',)
 
+        # To avoid loading the same files multiple times, we can check if the files 
+        # have already been loaded by looking for a specific environment variable that we set 
+        # after loading the files -; this is for performance optimization
+        load_completed = os.environ.get('TURBO_ENV_LOADED_FILES', 'False') == 'True'
+        if load_completed:
+            print('Called load_envs')
+            # FIXME: For whatever reason, in Django when the settings
+            # module is reloaded  the environment variables from the
+            # file are lost and only the system environment variables are preserved.
+            #  This is a workaround to reload the environment variables from 
+            # the system environment in case they are lost after the initial load.
+            for key, value in os.environ.items():
+                self._cache[key] = value
+            return
+
         for filename in args:
             path = pathlib.Path(filename)
 
@@ -224,11 +245,13 @@ class TurboEnv:
                     for line in lines:
                         if line == "\n":
                             continue
+                        variable_match = re.match(r'^([A-Z0-9\_]+)\s?\=\s?(.*)$', line)
+                        if not variable_match:
+                            continue
 
                         # Set the values that we read from the
                         # file into the cache
-                        key, value = line.strip().split('=', 1)
-
+                        key, value = variable_match.groups()
                         if self.only is not None:
                             if not key.startswith(self.only):
                                 continue
@@ -257,6 +280,8 @@ class TurboEnv:
             # from the system environment if no files were specified and no files were loaded.
             for key, value in system_environ.items():
                 self._cache[key] = value
+
+        os.environ.setdefault('TURBO_ENV_LOADED_FILES', 'True')
 
     def get(self, name: str) -> TypeAny:
         """A strict version of the `get` method that raises a KeyError 
@@ -301,6 +326,43 @@ class TurboEnv:
             return default
 
         return [cast_values(item).strip() for item in value.split(',')]
+    
+    def json(self, name: str, default: TypeAny = None, cast_values: dict[str, TypeAny] = None) -> TypeAny:
+        """Returns the value of the specified environment variable parsed as JSON.
+
+        Example usage::
+
+            from turboenv import TurboEnv
+
+            env = TurboEnv()
+            env.load_envs('.env')
+
+            config = env.json('CONFIG')
+            # config will be the parsed JSON value of the CONFIG environment variable
+
+        Args:
+            name (str): The name of the environment variable to retrieve.
+            default (TypeAny, optional): The default value to return if the environment variable is not set. Defaults to None.
+
+        Raises:
+            ValueError: If the specified environment variable is not set or if its value is not a valid JSON string.
+        """
+        values = self.array(name, default=default, cast_values=str)
+        dict_values = {}
+        for value in values:
+            key, value = value.split('=', 1)
+
+            _value = value.strip()
+            if cast_values and key in cast_values:
+                try:
+                    _value = cast_values[key](_value)
+                except Exception as e:
+                    raise ValueError(
+                        f"Value for {key} is not valid according to the provided cast function."
+                    ) from e
+
+            dict_values[key.strip().upper()] = _value
+        return json_module.loads(json_module.dumps(dict_values))
 
     def str_list(self, name: str, default: list[str] = None) -> list[str]:
         """Returns a list of strings for the given environment variable name. 

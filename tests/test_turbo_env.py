@@ -79,6 +79,36 @@ class TestTurboEnv:
 
         secret_value = instance.secret("DB_PASSWORD")
         assert secret_value == "my_secret_password"
+    
+    def test_dict(self):
+        instance = TurboEnv()
+        instance(DATABASE_CONFIG="host=localhost,port=5432,user=admin,password=secret")
+
+        config = instance.json("DATABASE_CONFIG")
+        assert config == {
+            "HOST": "localhost",
+            "PORT": "5432",
+            "USER": "admin",
+            "PASSWORD": "secret"
+        }
+
+    def test_dict_with_cast(self):
+        instance = TurboEnv()
+        instance(DATABASE_CONFIG="host=localhost,port=5432,user=admin,password=secret")
+
+        config = instance.json("DATABASE_CONFIG", cast_values={"port": int})
+        assert config == {
+            "HOST": "localhost",
+            "PORT": 5432,
+            "USER": "admin",
+            "PASSWORD": "secret"
+        }
+
+    def test_caching(self):
+        instance = TurboEnv()
+
+        for _ in range(2):
+            instance.load_envs('.env')
 
     # def test_namespace(self):
     #     instance = TurboEnv()

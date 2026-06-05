@@ -1,7 +1,9 @@
 | Name                         |    Stmts |     Miss |   Cover |
 |----------------------------- | -------: | -------: | ------: |
 | src/turboenv/\_\_init\_\_.py |        0 |        0 |    100% |
+| src/turboenv/\_\_main\_\_.py |       12 |       12 |      0% |
 | src/turboenv/exceptions.py   |       14 |        6 |     57% |
-| src/turboenv/main.py         |      189 |      141 |     25% |
-| src/turboenv/typings.py      |        1 |        0 |    100% |
-| **TOTAL**                    |  **204** |  **147** | **28%** |
+| src/turboenv/main.py         |      217 |      164 |     24% |
+| src/turboenv/plugins.py      |        3 |        3 |      0% |
+| src/turboenv/typings.py      |        3 |        0 |    100% |
+| **TOTAL**                    |  **249** |  **185** | **26%** |

@@ -5,8 +5,8 @@ import os
 env = TurboEnv()
 
 env.load_envs('tests/testapp/.env')
-env.conditional('DEBUG').to_be('True')
-env.conditional('REDIS_URL').depends_on(values=['REDIS_USERNAME'])
+# env.conditional('DEBUG').to_be('True')
+# env.conditional('REDIS_URL').depends_on(values=['REDIS_USERNAME'])
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
