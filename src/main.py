@@ -4,6 +4,7 @@ from collections import OrderedDict
 import pathlib
 from contextlib import contextmanager
 from urllib.parse import urlparse
+from src.exceptions import MissingEnvVariableError
 import logging
 import os
 import string
@@ -18,18 +19,83 @@ def _load_file(path: pathlib.Path, encoding: str = 'utf-8') -> Generator[list[st
         yield lines
 
 
-class Value[T]:
-    def __init__(self, value: T):
-        self.value = value
+class Conditionals[T = TypeAny]:
+    def __init__(self, instance: 'TurboEnv', value: T):
+        self.instance = instance
+        self._value = value
 
-    def depends_on(self, *args: str) -> "Value[T]":
+    def value(self) -> T:
+        return self._value
+
+    def depends_on(self, values: list[str] = []) -> 'Conditionals[T]':
+        """Blocks the execution of the code until the specified environment variables exist. 
+        If any of the specified environment variables do not exist, it raises an ExceptionGroup 
+        containing all the MissingEnvVariableError instances for the missing variables.
+
+        A typical use case for this method is when you have environment variables that depend on each other,
+        like in the case of a database URL that depends on the existence of a database host, port, username, and password.
+
+        Example usage::
+
+            from turboenv import TurboEnv
+            env = TurboEnv()
+            env.load_envs('.env')
+
+            # This will block until the environment variables DB_HOST, DB_PORT, DB_USER, and DB_PASSWORD exist
+            env.conditional('DATABASE_URL').depends_on(['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_PASSWORD'])
+
+            env.string('DATABASE_URL')  # This will now work because the required environment variables exist
+
+        Args:
+            values (list[str]): A list of strings representing the names of the environment variables to check for existence.
+
+        Raises:
+            ExceptionGroup: If any of the specified environment variables do not exist, an ExceptionGroup is raised containing all the MissingEnvVariableError instances for the missing variables.
+        """
+        errors: list[MissingEnvVariableError] = []
+        for name in values:
+            if not self.instance._exists(name):
+                errors.append(MissingEnvVariableError(name))
+
+        if errors:
+            raise ExceptionGroup("Missing environment variables", errors)
+
         return self
 
-    def failif(self, condition: Callable[[T], bool], message: str) -> "Value[T]":
+    def to_be(self, expected: T) -> 'Conditionals[T]':
+        self._value == expected
+        return self
+
+    def not_to_be(self, expected: T) -> 'Conditionals[T]':
+        self._value != expected
+        return self
+
+    def to_exist(self) -> 'Conditionals[T]':
+        self._value is not None
+        return self
+
+    def to_not_be_empty(self) -> 'Conditionals[T]':
+        self._value is not None and self._value != ""
+        return self
+
+    def to_contain(self, value: T) -> 'Conditionals[T]':
+        if not isinstance(self._value, (list, str)):
+            raise TypeError(
+                "Value must be a list or a string to use to_contain")
+        return self
+
+    def path_to_exist(self) -> 'Conditionals[T]':
+        if not isinstance(self._value, (str, pathlib.Path)):
+            raise TypeError(
+                "Value must be a string or a pathlib.Path to use path_to_exist")
+
+        path = pathlib.Path(self._value)
+        if not path.exists():
+            raise FileNotFoundError(f"Path {self._value} does not exist")
         return self
 
 
-class NamespaceValues[T = OrderedDict[str, TypeAny]]:
+class NamespaceValues[T= OrderedDict[str, TypeAny]]:
     _cache: T = OrderedDict()
 
     def __init__(self, name: str, values: T):
@@ -102,6 +168,11 @@ class TurboEnv:
         instance._cache.update(envs)
         return instance
 
+    def _exists(self, name: str) -> bool:
+        """Checks if the specified environment variable exists in the cache.
+        Used for internal checks and conditional logic."""
+        return name in self._cache
+
     def load_envs(self, *args: str):
         """Loads environment variables from the specified files. 
         If no files are specified, it defaults to loading from a 
@@ -155,6 +226,11 @@ class TurboEnv:
             if not self.has_files and not args:
                 for key, value in system_environ.items():
                     self._cache[key] = value
+
+    def get(self, name: str) -> TypeAny:
+        """A strict version of the `get` method that raises a KeyError 
+        if the specified environment variable does not exist."""
+        return self._cache[name]
 
     def bool(self, name: str, default: bool = None) -> bool:
         booleans = ['true', '1', 'yes', 'on', 'false', '0', 'no', 'off']
@@ -301,29 +377,26 @@ class TurboEnv:
                 f"Value for {name} is not a valid base64-encoded string: {value}") from e
         else:
             return decoded_value
-        
+
     def random_value(self, name: str, is_secret: bool = False) -> str:
         """Create an environment variable with a random value."""
-        # To avoid regenerating the random value every time, 
+        # To avoid regenerating the random value every time,
         # we can check if the value already exists in the cache
         if name in self._cache:
             return self._cache[name]
-        
-        random_value = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+
+        random_value = ''.join(random.choices(
+            string.ascii_letters + string.digits, k=32))
         if is_secret:
-            random_value = base64.b64encode(random_value.encode('utf-8')).decode('utf-8')
+            random_value = base64.b64encode(
+                random_value.encode('utf-8')).decode('utf-8')
 
         self._cache[name] = random_value
         return random_value
 
-    def exists(self, name: str) -> bool:
-        return name in self._cache
+    # def namespace(self, name: str) -> "TurboEnv":
+    #     return self.new(**self._namespace_cache(name))
 
-    def get(self, name: str, default: TypeAny = None) -> Value:
-        return Value(True)
-
-    def namespace(self, name: str) -> "TurboEnv":
-        return self.new(**self._namespace_cache(name))
-
-    def conditional(self):
-        return self
+    def conditional(self, name: str):
+        value = self.get(name)
+        return Conditionals(value)

@@ -1,4 +1,4 @@
-from src.main import Value, TurboEnv, _load_file
+from src.main import TurboEnv, _load_file
 import pathlib
 import base64
 
@@ -67,7 +67,7 @@ class TestTurboEnv:
         instance = TurboEnv()
         instance.load_envs('.env')
         value = instance.get("BOOL_ENV")
-        assert isinstance(value, Value)
+        assert isinstance(value, bool)
 
     def test_secret(self):
         instance = TurboEnv()
@@ -75,7 +75,7 @@ class TestTurboEnv:
 
         secret = base64.b64encode(b'my_secret_password').decode('utf-8')
         instance(DB_PASSWORD=secret)
-        
+
         secret_value = instance.secret("DB_PASSWORD")
         assert secret_value == "my_secret_password"
 
