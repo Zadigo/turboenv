@@ -1,4 +1,10 @@
 {
+    "[editor]": {
+       
+    },
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.autopep8"
+    },
     "python.testing.pytestEnabled": true,
     "python.testing.unittestEnabled": false,
     "python.testing.autoTestDiscoverOnSaveEnabled": true,
