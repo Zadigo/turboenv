@@ -3,6 +3,7 @@
 TurboEnv is a Python package designed to facilitate the manipulation of environment files and environment variables in any Python project.
 
 * The source code is available under the [src/turboenv](src/turboenv) directory and contains three main modules: `main`, `exceptions`, and `typings`.
+* You can find the documentation for the package in the [README](README.md) file, which includes installation instructions, usage examples, and API reference.
 
 # Commands
 
