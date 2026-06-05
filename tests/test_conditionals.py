@@ -1,4 +1,4 @@
-from src.main import TurboEnv, Conditionals
+from src.turboenv.main import TurboEnv, Conditionals
 import pytest
 
 

@@ -1,6 +1,6 @@
-from src.main import TurboEnv, _load_file
 import pathlib
 import base64
+from src.turboenv.main import TurboEnv, _load_file
 
 
 def test_load_file():

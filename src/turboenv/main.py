@@ -1,10 +1,10 @@
 from typing import Callable, Generator, Optional
-from src.typings import TypeAny
+from src.turboenv.typings import TypeAny
 from collections import OrderedDict
 import pathlib
 from contextlib import contextmanager
 from urllib.parse import urlparse
-from src.exceptions import MissingEnvVariableError
+from src.turboenv.exceptions import MissingEnvVariableError
 import logging
 import os
 import string
