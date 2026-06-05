@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📚 TurboEnv Documentation
+    url: https://github.com/Zadigo/turboenv#readme
+    about: Check the documentation for usage of TurboEnv
