@@ -150,7 +150,7 @@ env.conditional("DB_PASSWORD").not_to_be("password")
 
 Requires the environment variable to be present.
 
-> Note
+> [!CAUTION]
 > This does not check if the value of the environment variable is empty or not, it only checks if it is present in the environment.
 
 ```python
@@ -180,3 +180,19 @@ Requires the value of the environment variable to be a valid path that exists in
 ```python
 env.conditional("CONFIG_PATH").path_to_exist()
 ```
+
+# Testing
+
+To run the tests, use the following command:
+
+```bash
+pytest
+```
+
+# Contributing
+
+Contributions are welcome! Please feel free to submit a pull request or open an issue if you have any suggestions or find any bugs.
+
+# License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
