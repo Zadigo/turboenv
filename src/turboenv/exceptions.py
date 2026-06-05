@@ -15,6 +15,6 @@ class ConditionalError(TurboEnvError):
     message = "A conditional check failed: {details}"
 
     def __init__(self, value: str, expected: str, condition: str):
-        self.details = f"Expected {value} to {condition} {expected}"
+        self.details = f"Expected {value} {condition} {expected}"
         message = self.message.format(details=self.details)
         super().__init__(message)

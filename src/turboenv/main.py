@@ -20,12 +20,12 @@ def _load_file(path: pathlib.Path, encoding: str = 'utf-8') -> Generator[list[st
 
 
 class Conditionals[T = TypeAny]:
-    def __init__(self, instance: 'TurboEnv', value: T):
+    def __init__(self, instance: 'TurboEnv', name: T):
         self.instance = instance
-        self._value = value
+        self._name = name
 
     def value(self) -> T:
-        return self._value
+        return self.instance._cache.get(self._name, None)
 
     def depends_on(self, values: list[str] = []) -> 'Conditionals[T]':
         """Blocks the execution of the code until the specified environment variables exist. 
@@ -58,59 +58,64 @@ class Conditionals[T = TypeAny]:
                 errors.append(exceptions.MissingEnvVariableError(name))
 
         if errors:
-            raise ExceptionGroup("Missing environment variables", errors)
+            variables = ', '.join(values)
+            raise ExceptionGroup(
+                f"{self._name} is missing one or many dependencies: {variables}", errors)
 
         return self
 
     def to_be(self, expected: T) -> 'Conditionals[T]':
-        if self._value != expected:
-            raise exceptions.ConditionalError(self._value, expected, "to be")
+        value = self.value()
+        if value != expected:
+            raise exceptions.ConditionalError(value, expected, "to be")
         return self
 
     def not_to_be(self, expected: T) -> 'Conditionals[T]':
-        result = self._value != expected
-        if not result:
+        value = self.value()
+        if value == expected:
             raise exceptions.ConditionalError(
-                self._value, expected, "not to be")
+                value, expected, "not to be")
         return self
 
     def to_exist(self) -> 'Conditionals[T]':
-        value = self.instance._cache.get(self._value, None)
+        value = self.value()
         if value is None:
-            raise exceptions.ConditionalError(self._value, None, "exist")
+            raise exceptions.ConditionalError(value, None, "exist")
         return self
 
     def to_not_be_empty(self) -> 'Conditionals[T]':
-        value = self.instance._cache.get(self._value, None)
+        value = self.value()
         if value is None or value == "":
             raise exceptions.ConditionalError(
-                self._value, None, "not be empty")
+                value, None, "not be empty")
         return self
 
     def to_contain(self, expected: T) -> 'Conditionals[T]':
-        if not isinstance(self._value, (list, str)):
+        value = self.value()
+        if not isinstance(value, (list, str)):
             raise TypeError(
                 "Value must be a list or a string to use to_contain")
 
-        value = self.instance._cache.get(self._value, '')
+        value = self.value()
         if expected not in value:
             raise exceptions.ConditionalError(value, expected, "contain")
         return self
 
     def path_to_exist(self) -> 'Conditionals[T]':
-        if not isinstance(self._value, (str, pathlib.Path)):
+        value = self.value()
+        if not isinstance(value, (str, pathlib.Path)):
             raise TypeError(
                 "Value must be a string or a pathlib.Path to use path_to_exist")
 
-        value = self.instance._cache.get(self._value, None)
+        value = self.value()
         if value is None:
             raise exceptions.ConditionalError(
-                self._value, None, "exist as a path")
+                self._name, None, "exist as a path")
 
         path = pathlib.Path(value)
         if not path.exists():
             raise FileNotFoundError(
-                f"Path from env variable {self._value} does not exist")
+                f"Path from env variable {self._name} does not exist")
         return self
 
 
@@ -249,7 +254,10 @@ class TurboEnv:
     def get(self, name: str) -> TypeAny:
         """A strict version of the `get` method that raises a KeyError 
         if the specified environment variable does not exist."""
-        return self._cache[name]
+        try:
+            return self._cache[name]
+        except KeyError as e:
+            raise exceptions.MissingEnvVariableError(name) from e
 
     def bool(self, name: str, default: bool = None) -> bool:
         booleans = ['true', '1', 'yes', 'on', 'false', '0', 'no', 'off']
@@ -417,5 +425,9 @@ class TurboEnv:
     #     return self.new(**self._namespace_cache(name))
 
     def conditional(self, name: str):
-        value = self.get(name)
-        return Conditionals(value)
+        """
+        Args:
+            name (str): The name of the environment variable to apply the conditional logic on.
+        """
+        self.get(name)
+        return Conditionals(self, name)

@@ -13,9 +13,12 @@ async def test_conditional_success():
 
     instance = Conditionals(instance, 'REDIS_URL')
     try:
-        instance.depends_on(['REDIS_USERNAME', 'REDIS_PASSWORD'])
+        return_value = instance.depends_on(
+            ['REDIS_USERNAME', 'REDIS_PASSWORD'])
     except Exception as e:
         assert isinstance(e, Exception)
+
+    assert isinstance(return_value, Conditionals)
 
 
 async def test_conditional_fails():
