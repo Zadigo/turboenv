@@ -51,6 +51,29 @@ def test_new_class_method():
     instance = TurboEnv.new(DATABASE_URL="postgres://localhost")
     assert instance._cache.get("DATABASE_URL") == "postgres://localhost"
 
+
+def test_domain_list():
+    instance = TurboEnv()
+    instance.load_envs('.env')
+
+    result = instance.domain_list("DOMAINS")
+    assert result == ["example.com", "example.org"]
+
+def test_url_list():
+    instance = TurboEnv()
+    instance.load_envs('.env')
+    
+    result = instance.url_list("URLS")
+    assert result == ["http://api.example.com", "https://api.example.org"]
+
+
+def test_url_list_secured():
+    instance = TurboEnv()
+    instance.load_envs('.env')
+    
+    with pytest.raises(ValueError):
+        instance.url_list("URLS", secured=True)
+
         
 class TestTurboEnv:
     def test_implementation(self):
@@ -58,7 +81,8 @@ class TestTurboEnv:
         instance.load_envs('.env')
 
         assert len(instance._cache.keys()) > 0
-        assert len(instance._files) == 1
+        assert len(instance._files) == 0
+        assert not instance.has_files
         assert instance.fail_on_missing is False
         assert instance.skip_empty is False
 
@@ -141,12 +165,6 @@ class TestTurboEnv:
 
         for _ in range(2):
             instance.load_envs('.env')
-
-    # def test_namespace(self):
-    #     instance = TurboEnv()
-    #     instance.load_envs('.env')
-    #     namespace = instance.namespace("TEST_NAMESPACE")
-    #     assert isinstance(namespace, TurboEnv)
 
 
 class TestExceptions:

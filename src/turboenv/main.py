@@ -558,15 +558,17 @@ class TurboEnv:
             allowed_domains = env.domain_list('ALLOWED_DOMAINS')
             # allowed_domains will be a list of domains, e.g. ["example.com", "example.org"]
         """
-        domains = self.url_list(name, default=default)
+        domains = self.array(name, cast_values=str)
+        if domains is None:
+            return []
+        
         for domain in domains:
             parsed = urlparse(domain)
             if parsed.scheme and parsed.path:
-                raise ValueError(
-                    f"Value for {name} is not a valid domain: {domain}")
+                raise ValueError(f"Value for {name} is not a valid domain: {domain}")
         return domains
 
-    def url_list(self, name: str, default: Sequence[str] | None = None) -> Sequence[str]:
+    def url_list(self, name: str, default: Sequence[str] | None = None, secured: bool = False) -> Sequence[str]:
         """Returns a list of URLs for the given environment variable name.
 
         Example usage::
@@ -587,6 +589,10 @@ class TurboEnv:
             parsed = urlparse(url)
             if not parsed.scheme or not parsed.netloc:
                 raise ValueError(f"Value for {name} is not a valid URL: {url}")
+            
+            if secured and parsed.scheme != "https":
+                raise ValueError(f"Value for {name} is not a secure URL: {url}")
+
         return urls
 
     def secret(self, name: str):
@@ -620,40 +626,6 @@ class TurboEnv:
             raise ValueError(f"Value for {name} is not a valid base64-encoded string: {value}") from e
         else:
             return decoded_value
-
-    # def random_value(self, name: str, is_secret: bool = False) -> str:
-    #     """Create an environment variable with a random value.
-
-    #     Example usage::
-
-    #         from turboenv import TurboEnv
-
-    #         env = TurboEnv()
-    #         random_api_key = env.random_value('API_KEY', is_secret=True)
-
-    #         # random_api_key will be a random string that is base64-encoded, e.g. "c29tZS1yYW5kb20tc3RyaW5n"
-    #     """
-    #     # To avoid regenerating the random value every time,
-    #     # we can check if the value already exists in the cache
-    #     if name in self._cache:
-    #         return self._cache[name]
-
-    #     random_value = ''.join(
-    #         random.choices(
-    #             string.ascii_letters + string.digits,
-    #             k=32
-    #         )
-    #     )
-    #     if is_secret:
-    #         random_value = base64.b64encode(
-    #             random_value.encode('utf-8')).decode('utf-8')
-
-    #     self._cache[name] = random_value
-    #     os.environ.setdefault(name.upper(), random_value)
-    #     return random_value
-
-    # def namespace(self, name: str) -> "TurboEnv":
-    #     return self.new(**self._namespace_cache(name))
 
     def path(self, name: str, check: bool = True) -> pathlib.Path | None:
         """
