@@ -4,8 +4,7 @@ import pathlib
 
 import pytest
 
-from src.turboenv.exceptions import MissingEnvVariableError
-from src.turboenv.main import Conditionals, TurboEnv, _load_file
+from src.turboenv.main import Conditionals, TurboEnv, _load_file, expand
 
 
 def test_load_file():
@@ -169,8 +168,15 @@ class TestConditionals:
         instance = TurboEnv()
         instance.load_envs('.env')
         conditional = instance.conditional("DATABASE_URL")
-        with pytest.raises(MissingEnvVariableError):
+        with pytest.raises(ExceptionGroup):
             conditional.depends_on(['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_PASSWORD'])
+
+    def test_conditional_to_be(self):
+        instance = TurboEnv()
+        instance.load_envs('.env')
+        conditional = instance.conditional("DATABASE_URL")
+        with pytest.raises(ExceptionGroup):
+            conditional.to_be("postgres://user:password@localhost:5432/dbname")
 
 
 class TestExceptions:
@@ -213,3 +219,12 @@ def test_loaded_in_system_variables():
     instance.load_envs('.env')
 
     assert os.getenv("BOOL_ENV") == "True"
+
+
+def test_expand():
+    instance = TurboEnv()
+    instance.load_envs('.env')
+
+    expanded_value = expand(instance, "DICT_ENV_FROM_ENV")
+    assert expanded_value is not None
+    assert expanded_value == 'host=localhost,port=5432,user=admin,password=secret'

@@ -3,18 +3,45 @@ import json as json_module
 import logging
 import os
 import pathlib
-import random
 import re
-import string
 from collections import OrderedDict
 from contextlib import contextmanager
-from typing import Callable, Generator, Optional, Sequence
+from typing import Callable, Generator, Self, Sequence
 from urllib.parse import urlparse
 
 from src.turboenv import exceptions
 from src.turboenv.typings import TypeAny, TypeCast
 
 logger = logging.getLogger(__name__)
+
+
+def expand(instance: 'TurboEnv', key: str) -> str | None:
+    """
+    Expands environment variables in the given string.
+
+    Example usage::
+
+        from turboenv import expand
+    
+        expanded_value = expand(instance, "USER")
+
+    Args:
+        instance (TurboEnv): The TurboEnv instance.
+        key (str): The key of the environment variable to expand.
+
+    Returns:
+        str | None: The string with environment variables expanded, or None if the value is not found.
+    """
+    value = instance._cache.get(key, None)
+    
+    if value is not None:
+        other_env = re.search(r'%(\w+)%', value)
+        if other_env:
+            env_var = other_env.group(1)
+            new_value = os.getenv(env_var, "")
+            new_env_value = value.replace(f"%{env_var}%", new_value)
+            instance._cache[key] = new_env_value
+            return new_env_value
 
 
 @contextmanager
@@ -24,15 +51,15 @@ def _load_file(path: pathlib.Path, encoding: str = 'utf-8') -> Generator[list[st
         yield lines
 
 
-class Conditionals[T = TypeAny]:
-    def __init__(self, instance: 'TurboEnv', name: T):
+class Conditionals:
+    def __init__(self, instance: 'TurboEnv', name: str):
         self.instance = instance
         self._name = name
 
-    def value(self) -> T:
+    def value(self):
         return self.instance._cache.get(self._name, None)
 
-    def depends_on(self, values: list[str] = []) -> 'Conditionals[T]':
+    def depends_on(self, values: list[str] = []) -> Self:
         """Blocks the execution of the code until the specified environment variables exist. 
         If any of the specified environment variables do not exist, it raises an ExceptionGroup 
         containing all the MissingEnvVariableError instances for the missing variables.
@@ -70,7 +97,7 @@ class Conditionals[T = TypeAny]:
 
         return self
 
-    def to_be(self, expected: T) -> 'Conditionals[T]':
+    def to_be(self, expected: TypeAny) -> Self:
         """
         Checks if the value of the environment variable is equal to the expected value.
 
@@ -95,7 +122,7 @@ class Conditionals[T = TypeAny]:
             raise exceptions.ConditionalError(value, expected, "to be")
         return self
 
-    def not_to_be(self, expected: T) -> 'Conditionals[T]':
+    def not_to_be(self, expected: TypeAny) -> Self:
         """
         Checks if the value of the environment variable is not equal to the expected value.
 
@@ -121,7 +148,7 @@ class Conditionals[T = TypeAny]:
                 value, expected, "not to be")
         return self
 
-    def to_exist(self) -> 'Conditionals[T]':
+    def to_exist(self) -> Self:
         """
         Checks if the value of the environment variable exists (is not None).
 
@@ -143,7 +170,7 @@ class Conditionals[T = TypeAny]:
             raise exceptions.ConditionalError(value, None, "exist")
         return self
 
-    def to_not_be_empty(self) -> 'Conditionals[T]':
+    def to_not_be_empty(self) -> Self:
         """
         Checks if the value of the environment variable is not empty.
 
@@ -162,11 +189,10 @@ class Conditionals[T = TypeAny]:
         """
         value = self.value()
         if value is None or value == "":
-            raise exceptions.ConditionalError(
-                value, None, "not be empty")
+            raise exceptions.ConditionalError(value, None, "not be empty")
         return self
 
-    def to_contain(self, expected: T) -> 'Conditionals[T]':
+    def to_contain(self, expected: TypeAny) -> Self:
         """
         Checks if the value of the environment variable contains the expected value.
 
@@ -178,7 +204,7 @@ class Conditionals[T = TypeAny]:
             env.load_envs('.env')
             
             conditional = env.conditional("DATABASE_URL")
-            conditional.to_contain("postgres")
+            conditional.to_contain(["postgres"])
 
         Raises:
             ConditionalError: If the value of the environment variable does not contain the expected value.
@@ -190,11 +216,11 @@ class Conditionals[T = TypeAny]:
                 "Value must be a list or a string to use to_contain")
 
         value = self.value()
-        if expected not in value:
+        if isinstance(value, (list, str)) and str(expected) not in value:
             raise exceptions.ConditionalError(value, expected, "contain")
         return self
 
-    def path_to_exist(self) -> 'Conditionals[T]':
+    def path_to_exist(self) -> Self:
         """
         Checks if the value of the environment variable, interpreted as a file path, exists.
 
@@ -228,22 +254,6 @@ class Conditionals[T = TypeAny]:
             raise FileNotFoundError(
                 f"Path from env variable {self._name} does not exist")
         return self
-
-
-class NamespaceValues[T = OrderedDict[str, TypeAny]]:
-    _cache: T = OrderedDict()
-
-    def __init__(self, name: str, values: T):
-        """
-        Arguments:
-            name (str): The name of the namespace.
-            values (T): The values of the namespace.
-        """
-        self.name = name
-        self._cache = values
-        # ".env" file that was used to load the values
-        # for this namespace, if any
-        self.file: Optional[pathlib.Path] = None
 
 
 class TurboEnv:
@@ -281,13 +291,12 @@ class TurboEnv:
     _cache: OrderedDict[str, str] = OrderedDict()
 
     def __init__(self, fail_on_missing: bool = False, only: str | None = None, skip_empty: bool = False):
-        print('called __init__')       
         self.only = only
         self.fail_on_missing = fail_on_missing
         self.skip_empty = skip_empty
         self._files: set[pathlib.Path] = set()
 
-    def __call__(self, **defaults: TypeAny) -> "TurboEnv":
+    def __call__(self, **defaults: str) -> "TurboEnv":
         self._cache.update(defaults)
         return self
 
@@ -440,13 +449,13 @@ class TurboEnv:
             return str(default)
         return str(value)
 
-    def array(self, name: str, default: Sequence[TypeAny] | None = None, cast_values: Callable[[str], TypeAny] = str):
+    def array[T = str](self, name: str, default: Sequence[T] | None = None, cast_values: Callable[[str], T] = str) -> Sequence[T] | None:
         """Returns a list of values for the given environment variable name. The values are 
         expected to be comma-separated in the environment variable.
 
         Args:
             name (str): The name of the environment variable to retrieve.
-            default (Sequence[str], optional): The default value to return if the environment variable is not set. Defaults to None.
+            default (Sequence[T], optional): The default value to return if the environment variable is not set. Defaults to None.
             cast_values (Callable[[str], TypeCast] | None, optional): A function to cast each value in the list. Defaults to str.
         """
         value = self._cache.get(name, None)
@@ -455,7 +464,7 @@ class TurboEnv:
 
         single_values = [item for item in value.split(',')]
 
-        casted_values: list[TypeAny] = []
+        casted_values: list[T] = []
         for item in single_values:
             casted_value = cast_values(item)
             if isinstance(casted_value, str):
@@ -541,7 +550,7 @@ class TurboEnv:
         """
         return self.array(name, default=default, cast_values=int)
 
-    def domain_list(self, name: str, default: Sequence[str] | None = None) -> list[str]:
+    def domain_list(self, name: str, default: Sequence[str] | None = None) -> Sequence[str]:
         """Returns a list of domains for the given environment variable name.
 
         Example usage::
@@ -562,7 +571,7 @@ class TurboEnv:
                     f"Value for {name} is not a valid domain: {domain}")
         return domains
 
-    def url_list(self, name: str, default: Sequence[str] | None = None) -> list[str]:
+    def url_list(self, name: str, default: Sequence[str] | None = None) -> Sequence[str]:
         """Returns a list of URLs for the given environment variable name.
 
         Example usage::
@@ -576,12 +585,13 @@ class TurboEnv:
             # api_endpoints will be a list of URLs, e.g. ["https://api.example.com", "https://api.example.org"]
         """
         urls = self.array(name, default=default, cast_values=str)
+        if urls is None:
+            return []
 
         for url in urls:
             parsed = urlparse(url)
             if not parsed.scheme or not parsed.netloc:
-                raise ValueError(
-                    f"Value for {name} is not a valid URL: {url}")
+                raise ValueError(f"Value for {name} is not a valid URL: {url}")
         return urls
 
     def secret(self, name: str):
@@ -612,44 +622,72 @@ class TurboEnv:
             # Decode the value from base64
             decoded_value = base64.b64decode(value).decode('utf-8')
         except Exception as e:
-            raise ValueError(
-                f"Value for {name} is not a valid base64-encoded string: {value}") from e
+            raise ValueError(f"Value for {name} is not a valid base64-encoded string: {value}") from e
         else:
             return decoded_value
 
-    def random_value(self, name: str, is_secret: bool = False) -> str:
-        """Create an environment variable with a random value.
+    # def random_value(self, name: str, is_secret: bool = False) -> str:
+    #     """Create an environment variable with a random value.
 
-        Example usage::
+    #     Example usage::
 
-            from turboenv import TurboEnv
+    #         from turboenv import TurboEnv
 
-            env = TurboEnv()
-            random_api_key = env.random_value('API_KEY', is_secret=True)
+    #         env = TurboEnv()
+    #         random_api_key = env.random_value('API_KEY', is_secret=True)
 
-            # random_api_key will be a random string that is base64-encoded, e.g. "c29tZS1yYW5kb20tc3RyaW5n"
-        """
-        # To avoid regenerating the random value every time,
-        # we can check if the value already exists in the cache
-        if name in self._cache:
-            return self._cache[name]
+    #         # random_api_key will be a random string that is base64-encoded, e.g. "c29tZS1yYW5kb20tc3RyaW5n"
+    #     """
+    #     # To avoid regenerating the random value every time,
+    #     # we can check if the value already exists in the cache
+    #     if name in self._cache:
+    #         return self._cache[name]
 
-        random_value = ''.join(
-            random.choices(
-                string.ascii_letters + string.digits,
-                k=32
-            )
-        )
-        if is_secret:
-            random_value = base64.b64encode(
-                random_value.encode('utf-8')).decode('utf-8')
+    #     random_value = ''.join(
+    #         random.choices(
+    #             string.ascii_letters + string.digits,
+    #             k=32
+    #         )
+    #     )
+    #     if is_secret:
+    #         random_value = base64.b64encode(
+    #             random_value.encode('utf-8')).decode('utf-8')
 
-        self._cache[name] = random_value
-        os.environ.setdefault(name.upper(), random_value)
-        return random_value
+    #     self._cache[name] = random_value
+    #     os.environ.setdefault(name.upper(), random_value)
+    #     return random_value
 
     # def namespace(self, name: str) -> "TurboEnv":
     #     return self.new(**self._namespace_cache(name))
+
+    def path(self, name: str, check: bool = True) -> pathlib.Path | None:
+        """
+        Retrieves the value of the specified environment variable as a file system path.
+
+        Args:
+            name (str): The name of the environment variable to retrieve.
+            check (bool): If True, raises an error if the environment variable is not set.
+
+        Returns:
+            pathlib.Path: The value of the environment variable as a path.
+
+        Raises:
+            ValueError: If the environment variable is not set and check is True.
+        """
+        value = self._cache.get(name, None)
+        if value is not None:
+            for f in self._files:
+                parent = f.parent.absolute()
+                fullpath = parent.joinpath(value).absolute()
+                # Only work with paths that are within 
+                # the current base directory when the
+                # .env file is located
+                # fullpath.relative_to(parent)
+
+                if check and not fullpath.exists():
+                    raise ValueError(f"Path for environment variable {name} does not exist: {fullpath}")
+
+                return fullpath
 
     def conditional(self, name: str):
         """

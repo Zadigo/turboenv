@@ -1,6 +1,8 @@
+from src.turboenv.typings import TypeAny
+
+
 class TurboEnvError(Exception):
     message = "An error occurred in TurboEnv."
-
 
 class MissingEnvVariableError(TurboEnvError):
     message = "The specified environment variable is missing: {values}"
@@ -14,7 +16,7 @@ class MissingEnvVariableError(TurboEnvError):
 class ConditionalError(TurboEnvError):
     message = "A conditional check failed: {details}"
 
-    def __init__(self, value: str, expected: str, condition: str):
+    def __init__(self, value: TypeAny | None, expected: TypeAny, condition: str):
         self.details = f"Expected {value} {condition} {expected}"
         message = self.message.format(details=self.details)
         super().__init__(message)

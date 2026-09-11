@@ -1,10 +1,11 @@
 from fastapi import FastAPI
-from src.turboenv.main import TurboEnv
 
+from turboenv.main import TurboEnv
 
 app = FastAPI()
 
 env = TurboEnv()
+
 env.load_envs('.env')
 env.conditional('DEBUG').to_be('True')
 

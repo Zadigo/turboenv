@@ -1,12 +1,14 @@
 from pathlib import Path
+
 from src.turboenv.main import TurboEnv
-import os
 
 env = TurboEnv()
+env(RANDOM_ENV='some-value')
 
 env.load_envs('tests/testapp/.env')
-# env.conditional('DEBUG').to_be('True')
-# env.conditional('REDIS_URL').depends_on(values=['REDIS_USERNAME'])
+
+env.conditional('DEBUG').to_be('True')
+env.conditional('REDIS_URL').depends_on(values=['REDIS_USERNAME'])
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -111,3 +113,5 @@ USE_TZ = env.boolean('USE_TZ', default=True)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+STATIC_ROOT = env.path('STATIC_ROOT')
