@@ -1,17 +1,18 @@
-from typing import Callable, Generator, Optional
-from src.turboenv.typings import TypeAny
-from collections import OrderedDict
-import pathlib
-from contextlib import contextmanager
-from urllib.parse import urlparse
-from src.turboenv import exceptions
-import os
-import string
-import random
 import base64
 import json as json_module
 import logging
+import os
+import pathlib
+import random
 import re
+import string
+from collections import OrderedDict
+from contextlib import contextmanager
+from typing import Callable, Generator, Optional, Sequence
+from urllib.parse import urlparse
+
+from src.turboenv import exceptions
+from src.turboenv.typings import TypeAny, TypeCast
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,7 @@ class Conditionals[T = TypeAny]:
         Example usage::
 
             from turboenv import TurboEnv
+            
             env = TurboEnv()
             env.load_envs('.env')
 
@@ -69,12 +71,50 @@ class Conditionals[T = TypeAny]:
         return self
 
     def to_be(self, expected: T) -> 'Conditionals[T]':
+        """
+        Checks if the value of the environment variable is equal to the expected value.
+
+        Example usage::
+
+            from turboenv import TurboEnv
+
+            env = TurboEnv()
+            env.load_envs('.env')
+            
+            conditional = env.conditional("DATABASE_URL")
+            conditional.to_be("postgres://user:password@localhost:5432/dbname")
+
+        Args:
+            expected (T): The expected value to compare against.
+
+        Raises:
+            ConditionalError: If the value of the environment variable is not equal to the expected value.
+        """
         value = self.value()
         if value != expected:
             raise exceptions.ConditionalError(value, expected, "to be")
         return self
 
     def not_to_be(self, expected: T) -> 'Conditionals[T]':
+        """
+        Checks if the value of the environment variable is not equal to the expected value.
+
+        Example usage::
+
+            from turboenv import TurboEnv
+
+            env = TurboEnv()
+            env.load_envs('.env')
+            
+            conditional = env.conditional("DATABASE_URL")
+            conditional.not_to_be("postgres://user:password@localhost:5432/dbname")
+
+        Args:
+            expected (T): The expected value to compare against.
+
+        Raises:
+            ConditionalError: If the value of the environment variable is equal to the expected value.
+        """
         value = self.value()
         if value == expected:
             raise exceptions.ConditionalError(
@@ -82,12 +122,44 @@ class Conditionals[T = TypeAny]:
         return self
 
     def to_exist(self) -> 'Conditionals[T]':
+        """
+        Checks if the value of the environment variable exists (is not None).
+
+        Example usage::
+
+            from turboenv import TurboEnv
+
+            env = TurboEnv()
+            env.load_envs('.env')
+            
+            conditional = env.conditional("DATABASE_URL")
+            conditional.to_exist()
+
+        Raises:
+            ConditionalError: If the value of the environment variable is None.
+        """
         value = self.value()
         if value is None:
             raise exceptions.ConditionalError(value, None, "exist")
         return self
 
     def to_not_be_empty(self) -> 'Conditionals[T]':
+        """
+        Checks if the value of the environment variable is not empty.
+
+        Example usage::
+
+            from turboenv import TurboEnv
+
+            env = TurboEnv()
+            env.load_envs('.env')
+            
+            conditional = env.conditional("DATABASE_URL")
+            conditional.to_not_be_empty()
+
+        Raises:
+            ConditionalError: If the value of the environment variable is None or an empty string.
+        """
         value = self.value()
         if value is None or value == "":
             raise exceptions.ConditionalError(
@@ -95,6 +167,23 @@ class Conditionals[T = TypeAny]:
         return self
 
     def to_contain(self, expected: T) -> 'Conditionals[T]':
+        """
+        Checks if the value of the environment variable contains the expected value.
+
+        Example usage::
+
+            from turboenv import TurboEnv
+
+            env = TurboEnv()
+            env.load_envs('.env')
+            
+            conditional = env.conditional("DATABASE_URL")
+            conditional.to_contain("postgres")
+
+        Raises:
+            ConditionalError: If the value of the environment variable does not contain the expected value.
+            TypeError: If the value of the environment variable is not a list or a string.
+        """
         value = self.value()
         if not isinstance(value, (list, str)):
             raise TypeError(
@@ -106,6 +195,24 @@ class Conditionals[T = TypeAny]:
         return self
 
     def path_to_exist(self) -> 'Conditionals[T]':
+        """
+        Checks if the value of the environment variable, interpreted as a file path, exists.
+
+        Example usage::
+
+            from turboenv import TurboEnv
+
+            env = TurboEnv()
+            env.load_envs('.env')
+            
+            conditional = env.conditional("DATABASE_PATH")
+            conditional.path_to_exist()
+
+        Raises:
+            ConditionalError: If the value of the environment variable is None.
+            TypeError: If the value of the environment variable is not a string or a pathlib.Path.
+            FileNotFoundError: If the path does not exist.
+        """
         value = self.value()
         if not isinstance(value, (str, pathlib.Path)):
             raise TypeError(
@@ -123,7 +230,7 @@ class Conditionals[T = TypeAny]:
         return self
 
 
-class NamespaceValues[T= OrderedDict[str, TypeAny]]:
+class NamespaceValues[T = OrderedDict[str, TypeAny]]:
     _cache: T = OrderedDict()
 
     def __init__(self, name: str, values: T):
@@ -171,9 +278,9 @@ class TurboEnv:
         skip_empty (bool): If True, skips empty lines in the environment files. Defaults to False.
     """
 
-    _cache: OrderedDict[str, TypeAny] = OrderedDict()
+    _cache: OrderedDict[str, str] = OrderedDict()
 
-    def __init__(self, fail_on_missing: bool = False, only: str = None, skip_empty: bool = False):
+    def __init__(self, fail_on_missing: bool = False, only: str | None = None, skip_empty: bool = False):
         print('called __init__')       
         self.only = only
         self.fail_on_missing = fail_on_missing
@@ -192,7 +299,7 @@ class TurboEnv:
         return len(self._files) > 0
 
     @classmethod
-    def new(cls, **envs: TypeAny) -> "TurboEnv":
+    def new(cls, **envs: str) -> "TurboEnv":
         instance = cls()
         instance._cache.update(envs)
         return instance
@@ -227,8 +334,6 @@ class TurboEnv:
             #  This is a workaround to reload the environment variables from 
             # the system environment in case they are lost after the initial load.
             for key, value in os.environ.items():
-                if self.only and not key.startswith(self.only):
-                        continue
                 self._cache[key] = value
             return
 
@@ -246,6 +351,7 @@ class TurboEnv:
                     for line in lines:
                         if line == "\n":
                             continue
+
                         variable_match = re.match(r'^([A-Z0-9\_]+)\s?\=\s?(.*)$', line)
                         if not variable_match:
                             continue
@@ -253,24 +359,19 @@ class TurboEnv:
                         # Set the values that we read from the
                         # file into the cache
                         key, value = variable_match.groups()
-                        if self.only is not None:
-                            if not key.startswith(self.only):
-                                continue
+                        if self.only is not None and not key.startswith(self.only):
+                            continue
 
                         self._cache[key] = value
 
             # Once the files are loaded, check the system environment
             # variables. They will override the values from the files
             # if they exists in the system environment.
-            # for key, value in self._cache.items():
-            #     if key in system_environ:
-            #         self._cache[key] = system_environ[key]
-
             system_environ = os.environ
             skip_keys = list(system_environ.keys())
-            # Set the environment variables from the cache into the system environment
+            # Set the environment variables from the local cache into the system environment
             # This is necessary for the environment variables to be accessible from
-            # the system environment,
+            # the system environment
             for key, value in self._cache.items():
                 if key in skip_keys:
                     continue
@@ -278,7 +379,7 @@ class TurboEnv:
 
             # In the specific case of Docker environments for example,
             # since .env files are not used, load all the environment variables
-            # from the system environment if no files were specified and no files were loaded.
+            # from the system environment
             for key, value in system_environ.items():
                 self._cache[key] = value
 
@@ -292,7 +393,20 @@ class TurboEnv:
         except KeyError as e:
             raise exceptions.MissingEnvVariableError(name) from e
 
-    def boolean(self, name: str, default: bool = None) -> bool:
+    def boolean(self, name: str, default: bool | None = None) -> bool | None:
+        """Returns the value of the specified environment variable as a boolean.
+
+        .. code-block:: python
+
+            turbo_env.boolean("MY_BOOLEAN_ENV_VAR", default=True)
+
+        Args:
+            name (str): The name of the environment variable to retrieve.
+            default (bool | None, optional): The default value to return if the environment variable is not set. Defaults to None.
+
+        Returns:
+            bool | None: The boolean value of the environment variable, or the default if not set.
+        """
         booleans = ['true', '1', 'yes', 'on', 'false', '0', 'no', 'off']
 
         value = self._cache.get(name, None)
@@ -307,28 +421,49 @@ class TurboEnv:
             raise ValueError(
                 f"Value for {name} is not a valid boolean: {value}")
 
-    def string(self, name: str, default: str = None) -> str:
+    def string(self, name: str, default: str | None = None) -> str:
+        """Returns the value of the specified environment variable as a string.
+
+        .. code-block:: python
+
+            turbo_env.string("MY_STRING_ENV_VAR", default="default_value")
+
+        Args:
+            name (str): The name of the environment variable to retrieve.
+            default (str | None, optional): The default value to return if the environment variable is not set. Defaults to None.
+
+        Returns:
+            str: The string value of the environment variable, or the default if not set.
+        """
         value = self._cache.get(name, None)
         if value is None:
             return str(default)
         return str(value)
 
-    def array(self, name: str, default: list[str] = None, cast_values: Callable[[str], TypeAny] = str) -> list[str | int]:
+    def array(self, name: str, default: Sequence[TypeAny] | None = None, cast_values: Callable[[str], TypeAny] = str):
         """Returns a list of values for the given environment variable name. The values are 
         expected to be comma-separated in the environment variable.
 
         Args:
             name (str): The name of the environment variable to retrieve.
-            default (list[str], optional): The default value to return if the environment variable is not set. Defaults to None.
-            cast_values (Callable[[str], TypeAny], optional): A function to cast each value in the list. Defaults to str.
+            default (Sequence[str], optional): The default value to return if the environment variable is not set. Defaults to None.
+            cast_values (Callable[[str], TypeCast] | None, optional): A function to cast each value in the list. Defaults to str.
         """
         value = self._cache.get(name, None)
         if value is None:
             return default
 
-        return [cast_values(item).strip() for item in value.split(',')]
+        single_values = [item for item in value.split(',')]
+
+        casted_values: list[TypeAny] = []
+        for item in single_values:
+            casted_value = cast_values(item)
+            if isinstance(casted_value, str):
+                casted_value = casted_value.strip()
+            casted_values.append(casted_value)
+        return casted_values
     
-    def json(self, name: str, default: TypeAny = None, cast_values: dict[str, TypeAny] = None) -> TypeAny:
+    def json(self, name: str, default: Sequence[str] | None = None, cast_values: dict[str, TypeCast] | None = None) -> dict[str, TypeAny]:
         """Returns the value of the specified environment variable parsed as JSON.
 
         Example usage::
@@ -343,18 +478,25 @@ class TurboEnv:
 
         Args:
             name (str): The name of the environment variable to retrieve.
-            default (TypeAny, optional): The default value to return if the environment variable is not set. Defaults to None.
+            default (Sequence[str] | None, optional): The default value to return if the environment variable is not set. Defaults to None.
+            cast_values (dict[str, TypeCast] | None, optional): A dictionary specifying cast functions for specific keys in the JSON object. Defaults to None.
 
         Raises:
             ValueError: If the specified environment variable is not set or if its value is not a valid JSON string.
         """
         values = self.array(name, default=default, cast_values=str)
-        dict_values = {}
+        if values is None:
+            raise ValueError(f"Environment variable '{name}' is not set or is empty.")
+
+        dict_values: dict[str, TypeAny] = {}
         for value in values:
+            if not isinstance(value, str):
+                continue
+
             key, value = value.split('=', 1)
 
             _value = value.strip()
-            if cast_values and key in cast_values:
+            if cast_values is not None and key in cast_values:
                 try:
                     _value = cast_values[key](_value)
                 except Exception as e:
@@ -365,7 +507,7 @@ class TurboEnv:
             dict_values[key.strip().upper()] = _value
         return json_module.loads(json_module.dumps(dict_values))
 
-    def str_list(self, name: str, default: list[str] = None) -> list[str]:
+    def str_list(self, name: str, default: Sequence[str] | None = None):
         """Returns a list of strings for the given environment variable name. 
 
         Example usage::
@@ -380,11 +522,11 @@ class TurboEnv:
 
         Args:
             name (str): The name of the environment variable to retrieve.
-            default (list[str], optional): The default value to return if the environment variable is not set. Defaults to None.
+            default (Sequence[str] | None, optional): The default value to return if the environment variable is not set. Defaults to None.
         """
         return self.array(name, default=default, cast_values=str)
 
-    def int_list(self, name: str, default: list[int] = None) -> list[int]:
+    def int_list(self, name: str, default: Sequence[int] | None = None):
         """Returns a list of integers for the given environment variable name.
 
         Example usage::
@@ -399,7 +541,7 @@ class TurboEnv:
         """
         return self.array(name, default=default, cast_values=int)
 
-    def domain_list(self, name: str, default: list[str] = None) -> list[str]:
+    def domain_list(self, name: str, default: Sequence[str] | None = None) -> list[str]:
         """Returns a list of domains for the given environment variable name.
 
         Example usage::
@@ -420,7 +562,7 @@ class TurboEnv:
                     f"Value for {name} is not a valid domain: {domain}")
         return domains
 
-    def url_list(self, name: str, default: list[str] = None) -> list[str]:
+    def url_list(self, name: str, default: Sequence[str] | None = None) -> list[str]:
         """Returns a list of URLs for the given environment variable name.
 
         Example usage::
@@ -484,6 +626,7 @@ class TurboEnv:
 
             env = TurboEnv()
             random_api_key = env.random_value('API_KEY', is_secret=True)
+
             # random_api_key will be a random string that is base64-encoded, e.g. "c29tZS1yYW5kb20tc3RyaW5n"
         """
         # To avoid regenerating the random value every time,
@@ -511,7 +654,7 @@ class TurboEnv:
     def conditional(self, name: str):
         """
         Returns a Conditionals instance for the specified environment variable name, 
-        allowing you to apply conditional logic on the value of the environment variable.
+        allowing you to apply conditional logic on the value.
 
         Args:
             name (str): The name of the environment variable to apply the conditional logic on.

@@ -41,6 +41,7 @@ dev = [
     "pytest-datafiles>=3.0.1",
     "pytest-django>=4.12.0",
     "pytest-env>=1.6.0",
+    "pytest-reportlog>=1.0.0",
     "ruff>=0.15.16",
 ]
 
@@ -57,7 +58,7 @@ Repository = "https://github.com/Zadigo/turboenv.git"
 Changelog = "https://github.com/Zadigo/turboenv/blob/main/CHANGELOG.md"
 
 [tool.pyright]
-typeCheckingMode = "off"
+typeCheckingMode = "basic"
 reportMissingImports = true
 reportUntypedBaseClass = true
 

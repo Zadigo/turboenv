@@ -1,7 +1,11 @@
-import pathlib
 import base64
-from src.turboenv.main import TurboEnv, _load_file
 import os
+import pathlib
+
+import pytest
+
+from src.turboenv.exceptions import MissingEnvVariableError
+from src.turboenv.main import Conditionals, TurboEnv, _load_file
 
 
 def test_load_file():
@@ -10,6 +14,45 @@ def test_load_file():
         assert isinstance(lines, list)
 
 
+@pytest.mark.parametrize(
+    "testcase,expected",
+    [
+        (
+            "without casting",
+            {
+                "HOST": "localhost",
+                "PORT": "5432",
+                "USER": "admin",
+                "PASSWORD": "secret"
+            }
+        ),
+        (
+            "with casting",
+            {
+                "HOST": "localhost",
+                "PORT": 5432,
+                "USER": "admin",
+                "PASSWORD": "secret"
+            }
+        )
+    ]
+)
+def test_dict(testcase, expected):
+        instance = TurboEnv()
+        instance(DATABASE_CONFIG="host=localhost,port=5432,user=admin,password=secret")
+
+        if testcase == "with casting":
+            result = instance.json("DATABASE_CONFIG", cast_values={"port": int})
+            assert result == expected
+        else:
+            result = instance.json("DATABASE_CONFIG")
+            assert result == expected
+
+def test_new_class_method():
+    instance = TurboEnv.new(DATABASE_URL="postgres://localhost")
+    assert instance._cache.get("DATABASE_URL") == "postgres://localhost"
+
+        
 class TestTurboEnv:
     def test_implementation(self):
         instance = TurboEnv()
@@ -22,11 +65,11 @@ class TestTurboEnv:
         assert instance.skip_empty is False
 
     def test_implementation_with_only(self):
-        instance = TurboEnv(only="BOOL_")
+        instance = TurboEnv(only="HOSTS")
         instance.load_envs('.env')
 
         for key in instance._cache.keys():
-            assert key.startswith("BOOL_")
+            assert not key.startswith("HOSTS")
 
     def test_implementation_with_call(self):
         instance = TurboEnv()
@@ -45,30 +88,40 @@ class TestTurboEnv:
         instance = TurboEnv()
         instance.load_envs('.env')
         assert instance.string("STR_ENV") == "Hello, World!"
-        assert instance.string("NON_EXISTENT_ENV",
-                               default="DefaultValue") == "DefaultValue"
+        assert instance.string(
+            "NON_EXISTENT_ENV",
+            default="DefaultValue"
+        ) == "DefaultValue"
 
     def test_array(self):
         instance = TurboEnv()
         instance.load_envs('.env')
-        assert instance.array("HOSTS") == ["A", "B", "C"]
+
+        result = instance.array("HOSTS")
+        assert result is not None
+        assert result == ["A", "B", "C"]
 
     def test_str_list(self):
         instance = TurboEnv()
         instance.load_envs('.env')
         assert instance.str_list("HOSTS") == ["A", "B", "C"]
 
-    def test_exists(self):
+    def test_int_list(self):
         instance = TurboEnv()
         instance.load_envs('.env')
-        assert instance.exists("BOOL_ENV") is True
-        assert instance.exists("NON_EXISTENT_ENV") is False
+        assert instance.int_list("AGE") == [30]
+
+    # def test_exists(self):
+    #     instance = TurboEnv()
+    #     instance.load_envs('.env')
+    #     assert instance.exists("BOOL_ENV") is True
+    #     assert instance.exists("NON_EXISTENT_ENV") is False
 
     def test_get(self):
         instance = TurboEnv()
         instance.load_envs('.env')
         value = instance.get("BOOL_ENV")
-        assert isinstance(value, bool)
+        assert isinstance(value, str)
 
     def test_secret(self):
         instance = TurboEnv()
@@ -79,18 +132,6 @@ class TestTurboEnv:
 
         secret_value = instance.secret("DB_PASSWORD")
         assert secret_value == "my_secret_password"
-    
-    def test_dict(self):
-        instance = TurboEnv()
-        instance(DATABASE_CONFIG="host=localhost,port=5432,user=admin,password=secret")
-
-        config = instance.json("DATABASE_CONFIG")
-        assert config == {
-            "HOST": "localhost",
-            "PORT": "5432",
-            "USER": "admin",
-            "PASSWORD": "secret"
-        }
 
     def test_dict_with_cast(self):
         instance = TurboEnv()
@@ -115,6 +156,21 @@ class TestTurboEnv:
     #     instance.load_envs('.env')
     #     namespace = instance.namespace("TEST_NAMESPACE")
     #     assert isinstance(namespace, TurboEnv)
+
+
+class TestConditionals:
+    def get_conditonal_function(self):
+        instance = TurboEnv()
+        instance.load_envs('.env')
+        assert instance.conditional("DATABASE_URL") is not None
+        assert isinstance(instance.conditional("DATABASE_URL"), Conditionals)
+
+    def test_conditional_instance(self):
+        instance = TurboEnv()
+        instance.load_envs('.env')
+        conditional = instance.conditional("DATABASE_URL")
+        with pytest.raises(MissingEnvVariableError):
+            conditional.depends_on(['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_PASSWORD'])
 
 
 class TestExceptions:

@@ -10,3 +10,7 @@ wheels/
 .venv
 .env
 .env*
+
+reports/
+*coverage*
+htmlcov/
