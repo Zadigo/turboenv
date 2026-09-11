@@ -221,13 +221,14 @@ class TurboEnv:
         # after loading the files -; this is for performance optimization
         load_completed = os.environ.get('TURBO_ENV_LOADED_FILES', 'False') == 'True'
         if load_completed:
-            print('Called load_envs')
             # FIXME: For whatever reason, in Django when the settings
             # module is reloaded  the environment variables from the
             # file are lost and only the system environment variables are preserved.
             #  This is a workaround to reload the environment variables from 
             # the system environment in case they are lost after the initial load.
             for key, value in os.environ.items():
+                if self.only and not key.startswith(self.only):
+                        continue
                 self._cache[key] = value
             return
 
