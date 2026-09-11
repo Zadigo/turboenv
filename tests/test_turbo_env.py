@@ -4,7 +4,7 @@ import pathlib
 
 import pytest
 
-from src.turboenv.main import Conditionals, TurboEnv, _load_file, expand
+from src.turboenv.main import TurboEnv, _load_file, expand
 
 
 def test_load_file():
@@ -59,16 +59,8 @@ class TestTurboEnv:
 
         assert len(instance._cache.keys()) > 0
         assert len(instance._files) == 1
-        assert instance.only is None
         assert instance.fail_on_missing is False
         assert instance.skip_empty is False
-
-    def test_implementation_with_only(self):
-        instance = TurboEnv(only="HOSTS")
-        instance.load_envs('.env')
-
-        for key in instance._cache.keys():
-            assert not key.startswith("HOSTS")
 
     def test_implementation_with_call(self):
         instance = TurboEnv()
@@ -157,28 +149,6 @@ class TestTurboEnv:
     #     assert isinstance(namespace, TurboEnv)
 
 
-class TestConditionals:
-    def get_conditonal_function(self):
-        instance = TurboEnv()
-        instance.load_envs('.env')
-        assert instance.conditional("DATABASE_URL") is not None
-        assert isinstance(instance.conditional("DATABASE_URL"), Conditionals)
-
-    def test_conditional_instance(self):
-        instance = TurboEnv()
-        instance.load_envs('.env')
-        conditional = instance.conditional("DATABASE_URL")
-        with pytest.raises(ExceptionGroup):
-            conditional.depends_on(['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_PASSWORD'])
-
-    def test_conditional_to_be(self):
-        instance = TurboEnv()
-        instance.load_envs('.env')
-        conditional = instance.conditional("DATABASE_URL")
-        with pytest.raises(ExceptionGroup):
-            conditional.to_be("postgres://user:password@localhost:5432/dbname")
-
-
 class TestExceptions:
     def test_bool_invalid_exception(self):
         instance = TurboEnv()
@@ -193,7 +163,7 @@ class TestExceptions:
         instance.load_envs('.env')
 
         try:
-            instance.list("HOSTS", cast=str)
+            instance.str_list("HOSTS")
         except ValueError as e:
             assert str(
                 e) == "Value 'D' in HOSTS is not valid according to the provided validation function."

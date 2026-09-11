@@ -1,9 +1,12 @@
-from src.turboenv.main import TurboEnv, Conditionals
-import pytest
 import pathlib
 
+import pytest
 
-async def test_conditional_success():
+from src.turboenv.exceptions import ConditionalError
+from src.turboenv.main import Conditionals, TurboEnv
+
+
+async def test_conditional_instance():
     instance = TurboEnv()
     instance(
         REDIS_URL='redis://localhost:6379',
@@ -12,9 +15,11 @@ async def test_conditional_success():
     )
 
     instance = Conditionals(instance, 'REDIS_URL')
+
     try:
         return_value = instance.depends_on(
-            ['REDIS_USERNAME', 'REDIS_PASSWORD'])
+            ['REDIS_USERNAME', 'REDIS_PASSWORD']
+        )
     except Exception as e:
         assert isinstance(e, Exception)
 
@@ -26,97 +31,140 @@ async def test_conditional_fails():
     instance(REDIS_URL='redis://localhost:6379')
 
     instance = Conditionals(instance, 'REDIS_URL')
+
     try:
         instance.depends_on(['REDIS_USERNAME', 'REDIS_PASSWORD'])
     except Exception as e:
         assert isinstance(e, Exception)
 
 
-@pytest.fixture
-def instance_fixture():
-    instance = TurboEnv()
-    instance(REDIS_URL='redis://localhost:6379')
-    return instance
-
-
 class TestToBe:
-    async def test_is_valid(self, instance_fixture: TurboEnv):
+    @pytest.mark.parametrize(
+        'testcase,value',
+        [
+            (
+                'valid', 'redis://localhost:6379'
+            ),
+            (
+                'invalid', 'redis://invalid:6379'
+            )
+        ]
+    )
+    async def test_to_be_condition(self, instance_fixture: TurboEnv, testcase, value):
         instance = Conditionals(instance_fixture, 'REDIS_URL')
-        try:
-            instance.to_be('redis://localhost:6379')
-        except Exception as e:
-            assert isinstance(e, Exception)
-
-    async def test_is_invalid(self, instance_fixture: TurboEnv):
-        instance = Conditionals(instance_fixture, 'REDIS_URL')
-        try:
-            instance.to_be('redis://invalid:6379')
-        except Exception as e:
-            assert isinstance(e, Exception)
+        if testcase == 'valid':
+            instance.to_be(value)
+        else:
+            with pytest.raises(ConditionalError ):
+                instance.to_be(value)
 
 
 class TestNotToBe:
-    async def test_is_valid(self, instance_fixture: TurboEnv):
+    @pytest.mark.parametrize(
+        'testcase,value',
+        [
+            (
+                'valid', 'redis://invalid:6379'
+            ),
+            (
+                'invalid', 'redis://localhost:6379'
+            )
+        ]
+    )
+    async def test_not_to_be_condition(self, instance_fixture: TurboEnv, testcase, value):
         instance = Conditionals(instance_fixture, 'REDIS_URL')
-        instance.not_to_be('redis://@localhost:6379')
-
-    async def test_is_invalid(self, instance_fixture: TurboEnv):
-        instance = Conditionals(instance_fixture, 'REDIS_URL')
-        try:
-            instance.not_to_be('redis://localhost:6379')
-        except Exception as e:
-            assert isinstance(e, Exception)
+        if testcase == 'valid':
+            instance.not_to_be(value)
+        else:
+            with pytest.raises(ConditionalError):
+                instance.not_to_be(value)
 
 
 class TestToExist:
-    async def test_exists(self, instance_fixture: TurboEnv):
-        instance = Conditionals(instance_fixture, 'REDIS_URL')
-        instance.to_exist()
+    @pytest.mark.parametrize(
+        'testcase,value',
+        [
+            (
+                'valid', 'REDIS_URL'
+            ),
+            (
+                'invalid', 'REDIS_URL_INVALID'
+            )
+        ]
+    )
+    async def test_to_exist_condition(self, instance_fixture: TurboEnv, testcase, value):
+        instance = Conditionals(instance_fixture, value)
 
-    async def test_does_not_exist(self, instance_fixture: TurboEnv):
-        instance = Conditionals(instance_fixture, 'MISSING_VAR')
-        try:
+        if testcase == 'valid':
             instance.to_exist()
-        except Exception as e:
-            assert isinstance(e, Exception)
+        else:
+            with pytest.raises(ConditionalError):
+                instance.to_exist()
 
 
 class TestToNotBeEmpty:
-    async def test_not_empty(self, instance_fixture: TurboEnv):
-        instance = Conditionals(instance_fixture, 'REDIS_URL')
-        instance.to_not_be_empty()
+    @pytest.mark.parametrize(
+        'testcase,value',
+        [
+            (
+                'valid', 'REDIS_URL'
+            ),
+            (
+                'invalid', 'EMPTY_VAR'
+            )
+        ]
+    )
+    async def test_not_empty(self, instance_fixture: TurboEnv, testcase, value):
+        instance = Conditionals(instance_fixture, value)
 
-    async def test_empty(self, instance_fixture: TurboEnv):
-        instance = Conditionals(instance_fixture, 'EMPTY_VAR')
-        try:
+        if testcase == 'valid':
             instance.to_not_be_empty()
-        except Exception as e:
-            assert isinstance(e, Exception)
+        else:
+            with pytest.raises(ConditionalError):
+                instance.to_not_be_empty()
 
 
 class TestToContain:
-    async def test_contains(self, instance_fixture: TurboEnv):
+    @pytest.mark.parametrize(
+        'testcase,value',
+        [
+            (
+                'valid', 'localhost'
+            ),
+            (
+                'invalid', 'invalid'
+            )
+        ]
+    )
+    async def test_contains(self, instance_fixture: TurboEnv, testcase, value):
         instance = Conditionals(instance_fixture, 'REDIS_URL')
-        instance.to_contain('localhost')
+        if testcase == 'valid':
+            instance.to_contain(value)
+        else:
+            with pytest.raises(ConditionalError):
+                instance.to_contain(value)
 
-    async def test_does_not_contain(self, instance_fixture: TurboEnv):
-        instance = Conditionals(instance_fixture, 'REDIS_URL')
-        try:
-            instance.to_contain('invalid')
-        except Exception as e:
-            assert isinstance(e, Exception)
 
+CURRENT_PATH = pathlib.Path(__file__).parent
 
 class TestPathToExist:
-    async def test_path_exists(self, instance_fixture: TurboEnv):
-        instance_fixture(SOME_PATH=pathlib.Path(__file__))
+    @pytest.mark.parametrize(
+        'testcase,value',
+        [
+            (
+                'valid', CURRENT_PATH
+            ),
+            (
+                'invalid', CURRENT_PATH.joinpath('invalid')
+            )
+        ]
+    )
+    async def test_path_exists(self, instance_fixture: TurboEnv, testcase, value):
+        instance_fixture(SOME_PATH=str(value))
         instance = Conditionals(instance_fixture, 'SOME_PATH')
-        instance.path_to_exist()
 
-    async def test_path_does_not_exist(self, instance_fixture: TurboEnv):
-        instance_fixture(NON_EXISTENT_PATH=pathlib.Path('/non/existent/path'))
-        instance = Conditionals(instance_fixture, 'NON_EXISTENT_PATH')
-        try:
+        if testcase == 'valid':
             instance.path_to_exist()
-        except Exception as e:
-            assert isinstance(e, Exception)
+        else:
+            with pytest.raises(FileNotFoundError):
+                instance.path_to_exist()

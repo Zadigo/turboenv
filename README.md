@@ -4,13 +4,13 @@ TurboEnv is a Python library that provides a simple and efficient way to manage 
 
 ## Installation
 
-```python
-
+```Shell
+pip install turboenv
 ```
 
 ## Loading Environment variables
 
-## Automatic detection 
+## Automatic detection
 
 When `load_envs` is first called, it looks for any `.env` located in the absolute path of the file that is calling it. If it finds one, it loads the environment variables from that file in the `default` namespace.
 
@@ -45,7 +45,7 @@ db_user = env.get("DB_USER")
 db_password = env.get("DB_PASSWORD")
 ```
 
-### Boolean method
+### Boolean - Type Casting
 
 Returns the boolean value of the environment variable with the given name:
 
@@ -53,7 +53,7 @@ Returns the boolean value of the environment variable with the given name:
 db_password = env.boolean("USE_DB")
 ```
 
-### String method
+### String - Type Casting
 
 Returns the string value of the environment variable with the given name:
 
@@ -61,7 +61,7 @@ Returns the string value of the environment variable with the given name:
 db_password = env.string("DB_PASSWORD")
 ```
 
-### Array method
+### Array - Type Casting
 
 Returns a list of strings by splitting the value of the environment variable with the given name using a specified separator (default is comma):
 
@@ -69,7 +69,7 @@ Returns a list of strings by splitting the value of the environment variable wit
 allowed_hosts = env.array("ALLOWED_HOSTS", cast=str)
 ```
 
-### String List method
+### String List - Type Casting
 
 Returns a list of strings by splitting the value of the environment variable with the given name using a specified separator (default is comma):
 
@@ -77,7 +77,7 @@ Returns a list of strings by splitting the value of the environment variable wit
 allowed_hosts = env.str_list("ALLOWED_HOSTS")
 ```
 
-### Interget List method
+### Integer List - Type Casting
 
 Returns a list of integers by splitting the value of the environment variable with the given name using a specified separator (default is comma):
 
@@ -85,7 +85,7 @@ Returns a list of integers by splitting the value of the environment variable wi
 allowed_ports = env.int_list("ALLOWED_PORTS")
 ```
 
-### Domain List method
+### Domain List - Type Casting
 
 Returns a list of domain names by splitting the value of the environment variable with the given name using a specified separator (default is comma):
 
@@ -93,7 +93,7 @@ Returns a list of domain names by splitting the value of the environment variabl
 allowed_domains = env.domain_list("ALLOWED_DOMAINS")
 ```
 
-### URL List method
+### URL List - Type Casting
 
 Returns a list of URLs by splitting the value of the environment variable with the given name using a specified separator (default is comma):
 
@@ -101,8 +101,7 @@ Returns a list of URLs by splitting the value of the environment variable with t
 allowed_urls = env.url_list("ALLOWED_URLS")
 ```
 
-
-### Secret method
+### Secret - Type Casting
 
 Returns the value of the environment variable with the given name, decoded from base64:
 
@@ -110,25 +109,32 @@ Returns the value of the environment variable with the given name, decoded from 
 db_password = env.secret("DB_PASSWORD")
 ```
 
-### Random Value
+### Path - Type Casting
 
-Returns a random value of the specified type. Supported types are: `string`, `integer`, `boolean`, `array`, `domain`, and `url`.
+Returns a `Path` object representing the path specified by the environment variable with the given name:
 
 ```python
-random_string = env.random_value("string")
+config_path = env.path("CONFIG_PATH")
 ```
+
+> [!NOTE]
+> The secret value should already be encoded in base64 or this will raise an error.
 
 ## Conditionals
 
-Conditionals are used to guarantee the integrity of your environment variables by checking if they meet certain conditions. If the conditions are not met, an exception is raised.
+Conditionals are used to guarantee the integrity of your environment variables by checking if they meet certain conditions. 
+When the conditions are not met, an exception is raised.
 
 ### Depends On
 
-Requires certain environment variables to be set in order for the application to run.
+Requires the presence of the specified environment variable in the environment.
 
 ```python
 env.conditional("DB_USER").depends_on(values=["DB_PASSWORD"])
 ```
+
+> [!CAUTION]
+> It does not check the actual values of the environment variables, only their presence.
 
 ### To Be
 
@@ -165,7 +171,7 @@ Requires the value of the environment variable to not be empty.
 env.conditional("DB_PASSWORD").to_not_be_empty()
 ```
 
-### To Contain 
+### To Contain
 
 Requires the value of the environment variable to contain a specified substring.
 
@@ -181,17 +187,16 @@ Requires the value of the environment variable to be a valid path that exists in
 env.conditional("CONFIG_PATH").path_to_exist()
 ```
 
-# Testing
+# Contributing
+
+Contributions are welcome! Please feel free to submit a pull request or open an issue if you have any suggestions or find any bugs.
+
 
 To run the tests, use the following command:
 
 ```bash
 pytest
 ```
-
-# Contributing
-
-Contributions are welcome! Please feel free to submit a pull request or open an issue if you have any suggestions or find any bugs.
 
 # License
 

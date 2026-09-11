@@ -215,8 +215,7 @@ class Conditionals:
             raise TypeError(
                 "Value must be a list or a string to use to_contain")
 
-        value = self.value()
-        if isinstance(value, (list, str)) and str(expected) not in value:
+        if str(expected) not in value:
             raise exceptions.ConditionalError(value, expected, "contain")
         return self
 
@@ -290,8 +289,7 @@ class TurboEnv:
 
     _cache: OrderedDict[str, str] = OrderedDict()
 
-    def __init__(self, fail_on_missing: bool = False, only: str | None = None, skip_empty: bool = False):
-        self.only = only
+    def __init__(self, fail_on_missing: bool = False, skip_empty: bool = False):
         self.fail_on_missing = fail_on_missing
         self.skip_empty = skip_empty
         self._files: set[pathlib.Path] = set()
@@ -368,9 +366,6 @@ class TurboEnv:
                         # Set the values that we read from the
                         # file into the cache
                         key, value = variable_match.groups()
-                        if self.only is not None and not key.startswith(self.only):
-                            continue
-
                         self._cache[key] = value
 
             # Once the files are loaded, check the system environment
