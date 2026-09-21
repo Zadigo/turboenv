@@ -1,6 +1,6 @@
 import argparse
-import pathlib
 import os
+import pathlib
 
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser(description='TurboEnv: A tool for managing environment variables.')
