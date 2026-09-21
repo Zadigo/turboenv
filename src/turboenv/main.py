@@ -9,8 +9,8 @@ from contextlib import contextmanager
 from typing import Callable, Generator, Self, Sequence
 from urllib.parse import urlparse
 
-from src.turboenv import exceptions
-from src.turboenv.typings import TypeAny, TypeCast
+from turboenv import exceptions
+from turboenv.typings import TypeAny, TypeCast
 
 logger = logging.getLogger(__name__)
 
@@ -261,7 +261,7 @@ class TurboEnv:
 
     Example usage:
 
-        from src.main import TurboEnv
+        from main import TurboEnv
 
         env = TurboEnv()
         env.load_envs('.env')
@@ -273,7 +273,7 @@ class TurboEnv:
     Variables can separated by namespaces using the `namespace` method. Variables that do not specify a namespace 
     are loaded in the global namespace and are accessible directly from the main instance.
 
-        from src.main import TurboEnv
+        from main import TurboEnv
 
         env = TurboEnv()
         env.load_envs(('test', '.env'), ('prod', '.env.prod'))   

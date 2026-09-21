@@ -1,4 +1,4 @@
-from src.turboenv.typings import TypeTurboEnv
+from turboenv.typings import TypeTurboEnv
 
 CACHE_SCHEMES = {
     'dbcache': 'django.core.cache.backends.db.DatabaseCache',

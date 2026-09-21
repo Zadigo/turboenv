@@ -1,4 +1,4 @@
-from src.turboenv.typings import TypeAny
+from turboenv.typings import TypeAny
 
 
 class TurboEnvError(Exception):
