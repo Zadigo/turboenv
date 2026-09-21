@@ -425,6 +425,29 @@ class TurboEnv:
             raise ValueError(
                 f"Value for {name} is not a valid boolean: {value}")
 
+    def integer(self, name: str, default: int | None = None) -> int | None:
+        """Returns the value of the specified environment variable as an integer.
+
+        .. code-block:: python
+
+            turbo_env.integer("MY_INTEGER_ENV_VAR", default=42)
+
+        Args:
+            name (str): The name of the environment variable to retrieve.
+            default (int | None, optional): The default value to return if the environment variable is not set. Defaults to None.
+
+        Returns:
+            int | None: The integer value of the environment variable, or the default if not set.
+        """
+        value = self._cache.get(name, None)
+        if value is None:
+            return default
+        try:
+            return int(value)
+        except ValueError:
+            raise ValueError(
+                f"Value for {name} is not a valid integer: {value}")
+
     def string(self, name: str, default: str | None = None) -> str:
         """Returns the value of the specified environment variable as a string.
 
