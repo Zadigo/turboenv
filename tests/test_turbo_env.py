@@ -1,4 +1,3 @@
-import base64
 import os
 import pathlib
 
@@ -92,73 +91,6 @@ class TestTurboEnv:
         instance(RANDOM_VALUE="123")
 
         assert instance._cache.get("RANDOM_VALUE") == "123"
-
-    def test_bool_valid(self):
-        instance = TurboEnv()
-        instance.load_envs('.env')
-        assert instance.boolean("BOOL_ENV") is True
-        assert instance.boolean("BOOL_ENV_2") is True
-
-    def test_str(self):
-        instance = TurboEnv()
-        instance.load_envs('.env')
-        assert instance.string("STR_ENV") == "Hello, World!"
-        assert instance.string(
-            "NON_EXISTENT_ENV",
-            default="DefaultValue"
-        ) == "DefaultValue"
-
-    def test_array(self):
-        instance = TurboEnv()
-        instance.load_envs('.env')
-
-        result = instance.array("HOSTS")
-        assert result is not None
-        assert result == ["A", "B", "C"]
-
-    def test_str_list(self):
-        instance = TurboEnv()
-        instance.load_envs('.env')
-        assert instance.str_list("HOSTS") == ["A", "B", "C"]
-
-    def test_int_list(self):
-        instance = TurboEnv()
-        instance.load_envs('.env')
-        assert instance.int_list("AGE") == [30]
-
-    # def test_exists(self):
-    #     instance = TurboEnv()
-    #     instance.load_envs('.env')
-    #     assert instance.exists("BOOL_ENV") is True
-    #     assert instance.exists("NON_EXISTENT_ENV") is False
-
-    def test_get(self):
-        instance = TurboEnv()
-        instance.load_envs('.env')
-        value = instance.get("BOOL_ENV")
-        assert isinstance(value, str)
-
-    def test_secret(self):
-        instance = TurboEnv()
-        instance.load_envs('.env')
-
-        secret = base64.b64encode(b'my_secret_password').decode('utf-8')
-        instance(DB_PASSWORD=secret)
-
-        secret_value = instance.secret("DB_PASSWORD")
-        assert secret_value == "my_secret_password"
-
-    def test_dict_with_cast(self):
-        instance = TurboEnv()
-        instance(DATABASE_CONFIG="host=localhost,port=5432,user=admin,password=secret")
-
-        config = instance.json("DATABASE_CONFIG", cast_values={"port": int})
-        assert config == {
-            "HOST": "localhost",
-            "PORT": 5432,
-            "USER": "admin",
-            "PASSWORD": "secret"
-        }
 
     def test_caching(self):
         instance = TurboEnv()

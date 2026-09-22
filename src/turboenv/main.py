@@ -442,6 +442,7 @@ class TurboEnv:
         value = self._cache.get(name, None)
         if value is None:
             return default
+        
         try:
             return int(value)
         except ValueError:
@@ -464,7 +465,7 @@ class TurboEnv:
         """
         value = self._cache.get(name, None)
         if value is None:
-            return str(default)
+            return str(default or '')
         return str(value)
 
     def array[T = str](self, name: str, default: Sequence[T] | None = None, cast_values: Callable[[str], T] = str) -> Sequence[T] | None:
@@ -523,12 +524,13 @@ class TurboEnv:
             key, value = value.split('=', 1)
 
             _value = value.strip()
-            if cast_values is not None and key in cast_values:
+            if cast_values is not None and key.casefold() in cast_values:
                 try:
-                    _value = cast_values[key](_value)
+                    _value = cast_values[key.casefold()](_value)
                 except Exception as e:
                     raise ValueError(
-                        f"Value for {key} is not valid according to the provided cast function."
+                        f"Could not cast value for key '{key}' using the provided cast function. "
+                        "Ensure that the cast value keys are in lowercase to match the casefolded keys."
                     ) from e
 
             dict_values[key.strip().upper()] = _value
@@ -610,7 +612,7 @@ class TurboEnv:
 
         for url in urls:
             parsed = urlparse(url)
-            if not parsed.scheme or not parsed.netloc:
+            if not bool(parsed.scheme) or not bool(parsed.netloc):
                 raise ValueError(f"Value for {name} is not a valid URL: {url}")
             
             if secured and parsed.scheme != "https":
@@ -666,18 +668,16 @@ class TurboEnv:
         """
         value = self._cache.get(name, None)
         if value is not None:
-            for f in self._files:
-                parent = f.parent.absolute()
-                fullpath = parent.joinpath(value).absolute()
-                # Only work with paths that are within 
-                # the current base directory when the
-                # .env file is located
-                # fullpath.relative_to(parent)
+            path = pathlib.Path(value)
+            if not path.is_absolute() and not path.exists():
+                raise ValueError(f"Path for environment variable {name} does not exist: {path}")
 
-                if check and not fullpath.exists():
-                    raise ValueError(f"Path for environment variable {name} does not exist: {fullpath}")
+            return path
+        else:
+            if check:
+                raise ValueError(f"Environment variable {name} is not set")
+            return None
 
-                return fullpath
 
     def conditional(self, name: str):
         """
