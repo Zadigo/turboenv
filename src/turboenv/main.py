@@ -10,6 +10,7 @@ from typing import Callable, Generator, Self, Sequence
 from urllib.parse import urlparse
 
 from turboenv import exceptions
+from turboenv.presets import EnvironmentPresets
 from turboenv.typings import TypeAny, TypeCast
 
 logger = logging.getLogger(__name__)
@@ -296,6 +297,7 @@ class TurboEnv:
 
     def __call__(self, **defaults: str) -> "TurboEnv":
         self._cache.update(defaults)
+        os.environ.update(defaults)
         return self
 
     def __repr__(self) -> str:
@@ -304,6 +306,22 @@ class TurboEnv:
     @property
     def has_files(self) -> bool:
         return len(self._files) > 0
+
+    @property
+    def presets(self):
+        """Returns an instance of EnvironmentPresets for 
+        accessing preset configurations for popular frameworks like Django,
+        FastMCP, FastAPI, Flask and others
+        
+        .. code-block:: python
+
+            from turboenv import TurboEnv
+
+            env = TurboEnvWithPresets()
+            DEBUG = env.presets.django.debug
+            
+        """
+        return EnvironmentPresets(self)
 
     @classmethod
     def new(cls, **envs: str) -> "TurboEnv":
@@ -593,6 +611,35 @@ class TurboEnv:
                 raise ValueError(f"Value for {name} is not a valid domain: {domain}")
         return domains
 
+    def url(self, name: str, secured: bool = False) -> str | None:
+        """Returns the url value for the given environment variable name.
+        
+        Example usage::
+
+            from turboenv import TurboEnv
+
+            env = TurboEnv()
+            env.load_envs('.env')
+
+            url_value = env.url('ENDPOINT')
+
+        Args:
+            name (str): The name of the environment variable to retrieve.
+            secured (bool): Whether to enforce that the URL must use the HTTPS scheme. Defaults to False.
+        """
+        url = self.string(name)
+        if url is None:
+            return None
+
+        parsed = urlparse(url)
+        if not bool(parsed.scheme) or not bool(parsed.netloc):
+            raise ValueError(f"Value for {name} is not a valid URL: {name}")
+        
+        if secured and parsed.scheme != "https":
+            raise ValueError(f"Value for {name} is not a secure URL: {str(url)}")
+
+        return url
+
     def url_list(self, name: str, default: Sequence[str] | None = None, secured: bool = False) -> Sequence[str]:
         """Returns a list of URLs for the given environment variable name.
 
@@ -689,3 +736,16 @@ class TurboEnv:
         """
         self.get(name)
         return Conditionals(self, name)
+
+    def regex(self, name: str, pattern: str):
+        """Applies a regular expression pattern to the value of 
+        the specified environment variable."""
+        value = self.string(name)
+
+        if value is None:
+            return None
+        
+        match = re.match(pattern, value)
+        if match is None:
+            raise ValueError(f"Value for {name} does not match the pattern: {pattern}")
+        return match.group(0)

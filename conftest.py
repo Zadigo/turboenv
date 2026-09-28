@@ -28,6 +28,8 @@ os.environ.setdefault("API_ENDPOINTS_INSECURE", "http://google.com")
 
 os.environ.setdefault("PATH_ENV", "temp_file.txt")
 
+os.environ.setdefault("URL_ENV", "https://example.com")
+
 @pytest.fixture
 def instance_fixture():
     from src.turboenv.main import TurboEnv

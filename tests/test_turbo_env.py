@@ -148,3 +148,11 @@ def test_expand():
     expanded_value = expand(instance, "DICT_ENV_FROM_ENV")
     assert expanded_value is not None
     assert expanded_value == 'host=localhost,port=5432,user=admin,password=secret'
+
+
+def test_url():
+    instance = TurboEnv()
+    instance.load_envs('.env')
+
+    result = instance.url("URL_ENV")
+    assert result == "https://example.com"
