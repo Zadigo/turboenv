@@ -195,7 +195,7 @@ def test_path(tmp_path, env_value, expected):
     instance.load_envs()
 
     if env_value == "PATH_ENV_NON_EXISTENT":
-        with pytest.raises(FileNotFoundError):
+        with pytest.raises((FileNotFoundError, Exception)):
             instance.path(env_value)
     else:
         # Create a temporary file

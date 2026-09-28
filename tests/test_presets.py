@@ -1,10 +1,10 @@
 
-from turboenv.main import TurboEnvWithPresets
+from turboenv.main import TurboEnv
 
 
 def test_load_preset(instance_fixture):
-    d = TurboEnvWithPresets()
+    d = TurboEnv()
 
-    result = d.django.redis_url()
+    result = d.presets.django.redis_url()
     assert result.startswith("redis://")
 

@@ -10,7 +10,7 @@ from typing import Callable, Generator, Self, Sequence
 from urllib.parse import urlparse
 
 from turboenv import exceptions
-from turboenv.presets import DjangoEnv, EnvironmentPresets
+from turboenv.presets import TurboEnvWithPresets
 from turboenv.typings import TypeAny, TypeCast
 
 logger = logging.getLogger(__name__)
@@ -217,7 +217,7 @@ class Conditionals:
                 "Value must be a list or a string to use to_contain")
 
         if str(expected) not in value:
-            raise exceptions.ConditionalError(value, expected, "contain")
+            raise exceptions.ConditionalError(value, expected, "to contain")
         return self
 
     def path_to_exist(self) -> Self:
@@ -309,7 +309,7 @@ class TurboEnv:
 
     @property
     def presets(self):
-        """Returns an instance of EnvironmentPresets for 
+        """Returns an instance of TurboEnvWithPresets for 
         accessing preset configurations for popular frameworks like Django,
         FastMCP, FastAPI, Flask and others
         
@@ -321,7 +321,7 @@ class TurboEnv:
             DEBUG = env.presets.django.debug
             
         """
-        return EnvironmentPresets(self)
+        return TurboEnvWithPresets(self)
 
     @classmethod
     def new(cls, **envs: str) -> "TurboEnv":
@@ -749,10 +749,3 @@ class TurboEnv:
         if match is None:
             raise ValueError(f"Value for {name} does not match the pattern: {pattern}")
         return match.group(0)
-
-
-class TurboEnvWithPresets(TurboEnv):
-    @property
-    def django(self) -> DjangoEnv:
-        return DjangoEnv(self)
-

@@ -20,7 +20,7 @@ os.environ.setdefault("AGE_INVALID", "thirty")
 
 os.environ.setdefault("DATABASE_CONFIG", "host=localhost,port=5432,user=admin,password=secret")
 
-os.environ.setdefault("REDIS_URL", "redis://localhost:6379")
+os.environ.setdefault("REDIS_OTHER_URL", "redis://localhost:6379")
 
 os.environ.setdefault("API_ENDPOINTS", "https://api.example.com,https://api.example.org")
 os.environ.setdefault("API_ENDPOINTS_INVALID", "google")

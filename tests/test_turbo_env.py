@@ -98,6 +98,12 @@ class TestTurboEnv:
         for _ in range(2):
             instance.load_envs('.env')
 
+    def test__call__(self):
+        instance = TurboEnv()
+        instance(RANDOM_VALUE="123")
+        assert instance._cache.get("RANDOM_VALUE") == "123"
+        assert os.environ.get("RANDOM_VALUE") == "123"
+
 
 class TestExceptions:
     def test_bool_invalid_exception(self):
