@@ -109,6 +109,9 @@ Returns the value of the environment variable with the given name, decoded from 
 db_password = env.secret("DB_PASSWORD")
 ```
 
+> [!NOTE]
+> The secret value should already be encoded in base64 or this will raise an error.
+
 ### Path - Type Casting
 
 Returns a `Path` object representing the path specified by the environment variable with the given name:
@@ -117,8 +120,45 @@ Returns a `Path` object representing the path specified by the environment varia
 config_path = env.path("CONFIG_PATH")
 ```
 
-> [!NOTE]
-> The secret value should already be encoded in base64 or this will raise an error.
+### Url
+
+Requires the value of the environment variable to be a valid URL.
+
+```python
+url = env.url("WEBSITE_URL")
+```
+
+### Regex
+
+Requires the value of the environment variable to match a specified regular expression pattern.
+
+```python
+match = env.regex("WEBSITE_URL", r"^https?://[^\s/$.?#].[^\s]*$")
+```
+
+> [!ERROR]
+> Will raise an error if the value does not match the specified regular expression pattern.
+
+## Working with a framework
+
+`TurboEnv` comes with a built-in class `TurboEnvWithPresets` that allows you to define and use preset environment variable configurations for different frameworks.
+
+For example, in Django you can setup your `STATIC_URL` and `MEDIA_URL` environment by doing:
+
+```python
+env = TurboEnvWithPresets()
+env.load_envs()
+
+STATIC_URL = env.presets.django.static_url()
+
+MEDIA_URL = env.presets.django.media_url()
+```
+
+Some special variables such as the ones provided below are provided since they are commonly used in various frameworks and services:
+
+* `REDIS_URL`
+* `AWS_S3_URL`
+* `RABBITMQ_URL`
 
 ## Conditionals
 

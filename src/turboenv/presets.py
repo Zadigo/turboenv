@@ -171,12 +171,3 @@ class DjangoEnv(BasePreset):
         url = f"amqp://{user}:{password}@{host}:{port}{vhost}"
         self.environ(RABBITMQ_URL=url)
         return url
-
-    
-class EnvironmentPresets:
-    def __init__(self, environ: TypeTurboEnv):
-        self.environ = environ
-    @property
-    def django(self) -> DjangoEnv:
-        return DjangoEnv(self.environ)
-

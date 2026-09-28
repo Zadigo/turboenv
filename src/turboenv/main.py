@@ -10,7 +10,7 @@ from typing import Callable, Generator, Self, Sequence
 from urllib.parse import urlparse
 
 from turboenv import exceptions
-from turboenv.presets import EnvironmentPresets
+from turboenv.presets import DjangoEnv, EnvironmentPresets
 from turboenv.typings import TypeAny, TypeCast
 
 logger = logging.getLogger(__name__)
@@ -749,3 +749,10 @@ class TurboEnv:
         if match is None:
             raise ValueError(f"Value for {name} does not match the pattern: {pattern}")
         return match.group(0)
+
+
+class TurboEnvWithPresets(TurboEnv):
+    @property
+    def django(self) -> DjangoEnv:
+        return DjangoEnv(self)
+
