@@ -6,30 +6,28 @@ from src.turboenv.exceptions import ConditionalError
 from src.turboenv.main import Conditionals, TurboEnv
 
 
-async def test_conditional_instance():
+async def test_conditional_instance(monkeypatch):
+    monkeypatch.setenv('REDIS_OTHER_URL', 'redis://localhost:6379')
+    monkeypatch.setenv('REDIS_OTHER_USERNAME', 'user')
+    monkeypatch.setenv('REDIS_OTHER_PASSWORD', 'pass')
+
     instance = TurboEnv()
-    instance(
-        REDIS_URL='redis://localhost:6379',
-        REDIS_USERNAME='user',
-        REDIS_PASSWORD='pass'
+    instance.load_envs()
+    
+    instance = Conditionals(instance, 'REDIS_OTHER_URL')
+
+    return_value = instance.depends_on(
+        ['REDIS_OTHER_USERNAME', 'REDIS_OTHER_PASSWORD']
     )
 
-    instance = Conditionals(instance, 'REDIS_URL')
-
-    try:
-        return_value = instance.depends_on(
-            ['REDIS_USERNAME', 'REDIS_PASSWORD']
-        )
-    except Exception as e:
-        assert isinstance(e, Exception)
-
+    assert return_value is not None
     assert isinstance(return_value, Conditionals)
 
 
-async def test_conditional_fails():
-    instance = TurboEnv()
-    instance(REDIS_URL='redis://localhost:6379')
+async def test_conditional_fails(monkeypatch):
+    monkeypatch.setenv('REDIS_URL', 'redis://localhost:6379')
 
+    instance = TurboEnv()
     instance = Conditionals(instance, 'REDIS_URL')
 
     try:

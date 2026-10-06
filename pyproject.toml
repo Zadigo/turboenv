@@ -46,6 +46,7 @@ dev = [
     "pytest-django>=4.12.0",
     "pytest-env>=1.6.0",
     "pytest-reportlog>=1.0.0",
+    "pytest-timeout>=2.4.0",
     "ruff>=0.15.16",
 ]
 
@@ -69,6 +70,7 @@ markers = [
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
 ]
+env = []
 
 [tool.pytest_env]
 env_files = [".env", ".env.test"]
