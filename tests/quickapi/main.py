@@ -11,8 +11,6 @@ env.conditional('DEBUG').to_be('True')
 
 DEBUG = env.boolean('DEBUG')
 
-print(DEBUG)
-
 @app.get("/")
 async def root():
     return {"message": "Hello World"}

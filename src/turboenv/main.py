@@ -6,7 +6,7 @@ import pathlib
 import re
 from collections import OrderedDict
 from contextlib import contextmanager
-from typing import Callable, Generator, Self, Sequence
+from typing import Any, Callable, Generator, Self, Sequence
 from urllib.parse import urlparse
 
 from turboenv import exceptions
@@ -295,9 +295,14 @@ class TurboEnv:
         self.skip_empty = skip_empty
         self._files: set[pathlib.Path] = set()
 
-    def __call__(self, **defaults: str) -> "TurboEnv":
-        self._cache.update(defaults)
-        os.environ.update(defaults)
+    def __call__(self, **defaults: Any) -> "TurboEnv":
+        str_values: dict[str, str] = {}
+        for key, value in defaults.items():
+            str_values[key] = str(value)
+
+        self._cache.update(str_values)
+        os.environ.update(str_values)
+        
         return self
 
     def __repr__(self) -> str:
