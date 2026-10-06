@@ -97,12 +97,18 @@ class TestTurboEnv:
 
         for _ in range(2):
             instance.load_envs('.env')
+            assert len(instance._cache.keys()) > 0
 
     def test__call__(self):
         instance = TurboEnv()
         instance(RANDOM_VALUE="123")
+
         assert instance._cache.get("RANDOM_VALUE") == "123"
         assert os.environ.get("RANDOM_VALUE") == "123"
+
+        instance(ANOTHER_VALUE=12345)
+        assert instance._cache.get("ANOTHER_VALUE") == "12345"
+        assert os.environ.get("ANOTHER_VALUE") == "12345"
 
 
 class TestExceptions:

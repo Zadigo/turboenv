@@ -21,7 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = env.secret('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.boolean('DEBUG', default=False)
+DEBUG = env.presets.django.debug
 
 ALLOWED_HOSTS = env.domain_list('ALLOWED_HOSTS', default=[])
 
@@ -114,4 +114,4 @@ USE_TZ = env.boolean('USE_TZ', default=True)
 
 STATIC_URL = 'static/'
 
-STATIC_ROOT = env.path('STATIC_ROOT')
+# STATIC_ROOT = env.path('STATIC_ROOT')
