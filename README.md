@@ -136,7 +136,7 @@ Requires the value of the environment variable to match a specified regular expr
 match = env.regex("WEBSITE_URL", r"^https?://[^\s/$.?#].[^\s]*$")
 ```
 
-> [!ERROR]
+> [!ERROR] Error
 > Will raise an error if the value does not match the specified regular expression pattern.
 
 ## Working with a framework
@@ -146,7 +146,7 @@ match = env.regex("WEBSITE_URL", r"^https?://[^\s/$.?#].[^\s]*$")
 For example, in Django you can setup your `STATIC_URL` and `MEDIA_URL` environment by doing:
 
 ```python
-env = TurboEnvWithPresets()
+env = TurboEnv()
 env.load_envs()
 
 STATIC_URL = env.presets.django.static_url()
@@ -162,7 +162,7 @@ Some special variables such as the ones provided below are provided since they a
 
 ## Conditionals
 
-Conditionals are used to guarantee the integrity of your environment variables by checking if they meet certain conditions. 
+Conditionals are used to guarantee the integrity of your environment variables by checking if they meet certain conditions.
 When the conditions are not met, an exception is raised.
 
 ### Depends On
@@ -174,7 +174,7 @@ env.conditional("DB_USER").depends_on(values=["DB_PASSWORD"])
 ```
 
 > [!CAUTION]
-> It does not check the actual values of the environment variables, only their presence.
+> It does not check the actual values of the environment variables, only their presence. Although the Turboenv does check for the presence of a variable if no default is provided, this check ensures that both `DB_USER` __and__ `DB_PASSWORD` are both present.
 
 ### To Be
 
@@ -221,7 +221,7 @@ env.conditional("ALLOWED_HOSTS").to_contain("example.com")
 
 ### Path To Exist
 
-Requires the value of the environment variable to be a valid path that exists in the file system.
+Requires the value of the environment variable to be a valid path that exists on the file system.
 
 ```python
 env.conditional("CONFIG_PATH").path_to_exist()
@@ -230,7 +230,6 @@ env.conditional("CONFIG_PATH").path_to_exist()
 # Contributing
 
 Contributions are welcome! Please feel free to submit a pull request or open an issue if you have any suggestions or find any bugs.
-
 
 To run the tests, use the following command:
 
