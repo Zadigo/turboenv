@@ -114,7 +114,7 @@ def test_int_list(env_value, expected):
 def test_get():
     instance = TurboEnv()
     instance.load_envs()
-    value = instance.get("BOOL_ENV")
+    value = instance.get("BOOL_ENV_TRUE")
     assert isinstance(value, str)
 
 

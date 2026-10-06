@@ -48,7 +48,8 @@ class TestToBe:
             )
         ]
     )
-    async def test_to_be_condition(self, instance_fixture: TurboEnv, testcase, value):
+    async def test_to_be_condition(self, instance_fixture, monkeypatch, testcase, value):
+        monkeypatch.setenv('REDIS_URL', value)
         instance = Conditionals(instance_fixture, 'REDIS_URL')
         if testcase == 'valid':
             instance.to_be(value)

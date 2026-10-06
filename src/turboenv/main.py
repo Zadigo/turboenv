@@ -308,6 +308,19 @@ class TurboEnv:
     def __repr__(self) -> str:
         return f"TurboEnv(cache={len(self._cache)}, files={len(self._files)})"
 
+    # def __getattr__(self, name: str):
+    #     # Update the cache with the current environment variables 
+    #     # before attempting to access the attribute. This resolves
+    #     # potential inconsistencies between the cache and the 
+    #     # actual environment variables.
+    #     for key, value in os.environ.items():
+    #         self._cache[key] = value
+
+    #     try:
+    #         return getattr(self, name)
+    #     except KeyError:
+    #         raise AttributeError(f"'TurboEnv' object has no attribute '{name}'")
+        
     @property
     def has_files(self) -> bool:
         return len(self._files) > 0
@@ -368,7 +381,12 @@ class TurboEnv:
             return
 
         for filename in args:
-            path = pathlib.Path(filename)
+            if isinstance(filename, pathlib.Path):
+                path = filename
+            else:
+                # Will convert the filename to a 
+                # pathlib.Path object
+                path = pathlib.Path(filename)
 
             if self.fail_on_missing:
                 if not path.exists():
