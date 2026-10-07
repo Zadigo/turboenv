@@ -34,26 +34,26 @@ jobs:
         run: uv sync --locked
 
       - name: Run tests
-        env:
-          BOOL_ENV_TRUE: "true"
-          BOOL_ENV_FALSE: "false"
-          BOOL_ENV_1: "1"
-          BOOL_ENV_0: "0"
-          BOOL_ENV_EMPTY: ""
-          STR_ENV: "Hello, World!"
-          HOSTS: "A,B,C"
-          HOSTS_SINGLE: "A"
-          HOSTS_INVALID_FORMAT: "A - B % C"
-          HOSTS_NUM: "1,2,3"
-          AGE: "30"
-          AGE_INVALID: "thirty"
-          DATABASE_CONFIG: "host=localhost,port=5432,user=admin,password=secret"
-          REDIS_OTHER_URL: "redis://localhost:6379"
-          API_ENDPOINTS: "https://api.example.com,https://api.example.org"
-          API_ENDPOINTS_INVALID: "google"
-          API_ENDPOINTS_INSECURE: "http://google.com"
-          PATH_ENV: "temp_file.txt"
-          URL_ENV: "https://example.com"
+        # env:
+        #   BOOL_ENV_TRUE: "true"
+        #   BOOL_ENV_FALSE: "false"
+        #   BOOL_ENV_1: "1"
+        #   BOOL_ENV_0: "0"
+        #   BOOL_ENV_EMPTY: ""
+        #   STR_ENV: "Hello, World!"
+        #   HOSTS: "A,B,C"
+        #   HOSTS_SINGLE: "A"
+        #   HOSTS_INVALID_FORMAT: "A - B % C"
+        #   HOSTS_NUM: "1,2,3"
+        #   AGE: "30"
+        #   AGE_INVALID: "thirty"
+        #   DATABASE_CONFIG: "host=localhost,port=5432,user=admin,password=secret"
+        #   REDIS_OTHER_URL: "redis://localhost:6379"
+        #   API_ENDPOINTS: "https://api.example.com,https://api.example.org"
+        #   API_ENDPOINTS_INVALID: "google"
+        #   API_ENDPOINTS_INSECURE: "http://google.com"
+        #   PATH_ENV: "temp_file.txt"
+        #   URL_ENV: "https://example.com"
         run: uv run pytest tests/
 
       - name: Run build
