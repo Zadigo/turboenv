@@ -166,7 +166,7 @@ def test_loaded_in_system_variables():
 
 def test_url():
     instance = TurboEnv()
-    instance.load_envs('.env')
+    instance.load_envs()
 
     result = instance.url("URL_ENV")
     assert result == "https://example.com"

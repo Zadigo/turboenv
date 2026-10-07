@@ -46,12 +46,12 @@ class DjangoEnv(BasePreset):
         return self.environ.boolean("EMAIL_USE_SSL")
 
     @property
-    def email_ssl_certfil(self):
+    def email_ssl_certfile(self):
         return self.environ.string("EMAIL_SSL_CERTFILE")
 
     @property
-    def email_ssl_key(self):
-        return self.environ.integer("EMAIL_SSL_KEYFILE")
+    def email_ssl_keyfile(self):
+        return self.environ.string("EMAIL_SSL_KEYFILE")
 
     @property
     def email_timeout(self):

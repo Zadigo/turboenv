@@ -49,8 +49,8 @@ class TestToBe:
         ]
     )
     async def test_to_be_condition(self, instance_fixture, monkeypatch, testcase, value):
-        monkeypatch.setenv('REDIS_URL', value)
-        instance = Conditionals(instance_fixture, 'REDIS_URL')
+        monkeypatch.setenv('REDIS_OTHER_URL', value)
+        instance = Conditionals(instance_fixture, 'REDIS_OTHER_URL')
         if testcase == 'valid':
             instance.to_be(value)
         else:
@@ -84,7 +84,7 @@ class TestToExist:
         'testcase,value',
         [
             (
-                'valid', 'REDIS_URL'
+                'valid', 'REDIS_OTHER_URL'
             ),
             (
                 'invalid', 'REDIS_URL_INVALID'
@@ -106,7 +106,7 @@ class TestToNotBeEmpty:
         'testcase,value',
         [
             (
-                'valid', 'REDIS_URL'
+                'valid', 'REDIS_OTHER_URL'
             ),
             (
                 'invalid', 'EMPTY_VAR'
