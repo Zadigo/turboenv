@@ -207,3 +207,27 @@ def test_path(tmp_path, env_value, expected):
 
         path_value = instance.path(env_value)
         assert path_value == tmp_path / expected
+
+
+def test_domain_list(env_file_fixture):
+    instance = TurboEnv()
+    instance.load_envs(env_file_fixture)
+
+    result = instance.domain_list("DOMAINS")
+    assert result == ["example.com", "example.org"]
+
+
+def test_url_list_secured():
+    instance = TurboEnv()
+    instance.load_envs()
+    
+    with pytest.raises(ValueError):
+        instance.url_list("API_ENDPOINTS_INSECURE", secured=True)
+
+
+def test_url():
+    instance = TurboEnv()
+    instance.load_envs()
+
+    result = instance.url("URL_ENV")
+    assert result == "https://example.com"

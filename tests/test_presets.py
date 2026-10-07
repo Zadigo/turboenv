@@ -28,6 +28,7 @@ DJANGO_ENV_SETTINGS = pytest.mark.parametrize(
 
 
 @DJANGO_ENV_SETTINGS
+@pytest.mark.integration
 def test_django_preset_settings(setting, instance_fixture):
     match setting:
         case 'DEBUG':

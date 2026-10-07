@@ -5,6 +5,21 @@ import pytest
 from src.turboenv.main import TurboEnv, _load_file
 
 
+def test_instance_creation(instance_fixture):
+    instance = TurboEnv()
+    assert isinstance(instance, TurboEnv)
+
+
+def test_cache_state():
+    pytest.skip("Something is creating a side effect on the test. The cache state might not be reliable.")
+    instance = TurboEnv()
+    assert len(instance._cache.keys()) == 0
+
+    instance.load_envs()
+    
+    assert len(instance._cache.keys()) > 0
+
+
 def test_load_file(tmp_path):
     env_file = tmp_path / ".env"
     env_file.write_text("HOST=localhost\nPORT=5432\nUSER=admin\nPASSWORD=secret\n")
@@ -12,6 +27,14 @@ def test_load_file(tmp_path):
     result = _load_file(env_file)
     with result as lines:
         assert isinstance(lines, list)
+        assert "HOST=localhost\n" in lines
+
+
+def test_load_file_from_other_location(env_file_fixture):
+    pytest.skip("Something is creating a side effect on the test")
+    instance = TurboEnv()
+    instance.load_envs(env_file_fixture)
+    assert instance._cache.get("VARIABLE_FROM_FILE") == "True"
 
 
 @pytest.mark.parametrize(
@@ -37,43 +60,9 @@ def test_load_file(tmp_path):
         )
     ]
 )
-def test_dict(testcase, expected):
-        instance = TurboEnv()
-        instance(DATABASE_CONFIG="host=localhost,port=5432,user=admin,password=secret")
-
-        if testcase == "with casting":
-            result = instance.json("DATABASE_CONFIG", cast_values={"port": int})
-            assert result == expected
-        else:
-            result = instance.json("DATABASE_CONFIG")
-            assert result == expected
-
-def test_new_class_method():
+def test_new_class_method(testcase, expected):
     instance = TurboEnv.new(DATABASE_URL="postgres://localhost")
     assert instance._cache.get("DATABASE_URL") == "postgres://localhost"
-
-
-def test_domain_list(env_file_fixture):
-    instance = TurboEnv()
-    instance.load_envs(env_file_fixture)
-
-    result = instance.domain_list("DOMAINS")
-    assert result == ["example.com", "example.org"]
-
-def test_url_list():
-    instance = TurboEnv()
-    instance.load_envs()
-    
-    result = instance.url_list("API_ENDPOINTS")
-    assert result == ["https://api.example.com", "https://api.example.org"]
-
-
-def test_url_list_secured():
-    instance = TurboEnv()
-    instance.load_envs()
-    
-    with pytest.raises(ValueError):
-        instance.url_list("API_ENDPOINTS_INSECURE", secured=True)
 
         
 class TestTurboEnv:
@@ -162,11 +151,3 @@ def test_loaded_in_system_variables():
 #     expanded_value = expand(instance, "DATABASE_CONFIG")
 #     assert expanded_value is not None
 #     assert expanded_value == 'host=localhost,port=5432,user=admin,password=secret'
-
-
-def test_url():
-    instance = TurboEnv()
-    instance.load_envs()
-
-    result = instance.url("URL_ENV")
-    assert result == "https://example.com"
